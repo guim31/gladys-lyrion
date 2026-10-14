@@ -1,0 +1,55 @@
+{
+  "result": {
+    "lastscan": "1791994334",
+    "version": "9.1.1",
+    "uuid": "00000000-0000-4000-8000-000000000000",
+    "ip": "192.0.2.2",
+    "httpport": "9000",
+    "info total albums": 1,
+    "info total artists": 1,
+    "info total genres": 1,
+    "info total songs": 3,
+    "info total duration": 120,
+    "player count": 2,
+    "players_loop": [
+      {
+        "playerindex": "0",
+        "playerid": "02:00:00:00:00:02",
+        "uuid": null,
+        "ip": "192.0.2.4:41942",
+        "name": "Salon",
+        "seq_no": 0,
+        "model": "squeezelite",
+        "modelname": "SqueezeLite",
+        "power": 0,
+        "isplaying": 0,
+        "displaytype": "none",
+        "isplayer": 1,
+        "canpoweroff": 1,
+        "connected": 1,
+        "firmware": "v1.9.9-1414"
+      },
+      {
+        "playerindex": 1,
+        "playerid": "02:00:00:00:00:01",
+        "uuid": null,
+        "ip": "192.0.2.3:55516",
+        "name": "Kitchen",
+        "seq_no": 0,
+        "model": "squeezelite",
+        "modelname": "SqueezeLite",
+        "power": 1,
+        "isplaying": 1,
+        "displaytype": "none",
+        "isplayer": 1,
+        "canpoweroff": 1,
+        "connected": 1,
+        "firmware": "v1.9.9-1414"
+      }
+    ],
+    "other player count": 0
+  },
+  "method": "slim.request",
+  "params": ["", ["serverstatus", "0", "100"]],
+  "id": 1
+}

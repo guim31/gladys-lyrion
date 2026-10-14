@@ -1,177 +1,767 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "Lyrion Music Server",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Control Squeezebox and squeezelite players of Lyrion (LMS): music, volume, favorites, announcements.",
+    "fr": "Pilotez les lecteurs Squeezebox et squeezelite de Lyrion (LMS) : musique, volume, favoris, annonces.",
+    "de": "Steuere Squeezebox und squeezelite über Lyrion (LMS): Musik, Lautstärke, Favoriten, Durchsagen.",
+    "es": "Controle los reproductores Squeezebox y squeezelite de Lyrion (LMS): música, volumen, favoritos."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-lyrion:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-lyrion/main/cover.png",
+  "categories": ["multimedia"],
+  "transports": ["local"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Connect your Lyrion server",
+        "fr": "Connecter votre serveur Lyrion",
+        "de": "Verbinde deinen Lyrion-Server",
+        "es": "Conecte su servidor Lyrion"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "Type the address of the computer that runs Lyrion Music Server (formerly Logitech Media Server). Every player it knows (Squeezebox, piCorePlayer, squeezelite...) then shows up in the Discovery tab.",
+        "fr": "Saisissez l'adresse de l'ordinateur où tourne Lyrion Music Server (ex-Logitech Media Server). Tous les lecteurs qu'il connaît (Squeezebox, piCorePlayer, squeezelite…) apparaissent alors dans l'onglet Découverte.",
+        "de": "Gib die Adresse des Rechners ein, auf dem Lyrion Music Server (früher Logitech Media Server) läuft. Alle Player, die er kennt (Squeezebox, piCorePlayer, squeezelite …), erscheinen dann im Tab Entdecken.",
+        "es": "Escriba la dirección del equipo donde se ejecuta Lyrion Music Server (antes Logitech Media Server). Todos los reproductores que conoce (Squeezebox, piCorePlayer, squeezelite…) aparecerán en la pestaña Descubrir."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://lyrion.org/",
+          "label": {
+            "en": "Lyrion Music Server",
+            "fr": "Lyrion Music Server",
+            "de": "Lyrion Music Server",
+            "es": "Lyrion Music Server"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "host",
+      "type": "string",
+      "label": {
+        "en": "Server address",
+        "fr": "Adresse du serveur",
+        "de": "Serveradresse",
+        "es": "Dirección del servidor"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "description": {
+        "en": "IP address or host name of the Lyrion server.",
+        "fr": "Adresse IP ou nom d'hôte du serveur Lyrion.",
+        "de": "IP-Adresse oder Hostname des Lyrion-Servers.",
+        "es": "Dirección IP o nombre de host del servidor Lyrion."
+      },
+      "placeholder": {
+        "en": "e.g. 192.168.1.20",
+        "fr": "ex. 192.168.1.20",
+        "de": "z. B. 192.168.1.20",
+        "es": "p. ej. 192.168.1.20"
+      },
+      "required": true
     },
     {
-      "key": "longitude",
+      "key": "port",
       "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
+      "label": {
+        "en": "Web port",
+        "fr": "Port web",
+        "de": "Web-Port",
+        "es": "Puerto web"
       },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
+      "description": {
+        "en": "Port of the Lyrion web interface (9000 by default).",
+        "fr": "Port de l'interface web de Lyrion (9000 par défaut).",
+        "de": "Port der Lyrion-Weboberfläche (standardmäßig 9000).",
+        "es": "Puerto de la interfaz web de Lyrion (9000 por defecto)."
+      },
+      "required": false,
+      "default": 9000,
+      "min": 1,
+      "max": 65535
     },
     {
-      "key": "unit",
+      "key": "username",
+      "type": "string",
+      "label": {
+        "en": "User name",
+        "fr": "Nom d'utilisateur",
+        "de": "Benutzername",
+        "es": "Nombre de usuario"
+      },
+      "description": {
+        "en": "Only if password protection is on in Lyrion (Settings, Advanced, Security).",
+        "fr": "Seulement si la protection par mot de passe est active dans Lyrion (Réglages, Avancé, Sécurité).",
+        "de": "Nur wenn der Passwortschutz in Lyrion aktiv ist (Einstellungen, Erweitert, Sicherheit).",
+        "es": "Solo si la protección con contraseña está activa en Lyrion (Ajustes, Avanzado, Seguridad)."
+      },
+      "required": false
+    },
+    {
+      "key": "password",
+      "type": "secret",
+      "label": {
+        "en": "Password",
+        "fr": "Mot de passe",
+        "de": "Passwort",
+        "es": "Contraseña"
+      },
+      "required": false
+    },
+    {
+      "key": "cli_port",
+      "type": "number",
+      "label": {
+        "en": "CLI port",
+        "fr": "Port CLI",
+        "de": "CLI-Port",
+        "es": "Puerto CLI"
+      },
+      "description": {
+        "en": "Lyrion announces every change on this port (9090 by default): instant updates. 0 turns it off: the players are then read every 5 seconds.",
+        "fr": "Lyrion y signale chaque changement (9090 par défaut) : mises à jour immédiates. 0 le désactive : les lecteurs sont alors lus toutes les 5 secondes.",
+        "de": "Lyrion meldet über diesen Port jede Änderung (standardmäßig 9090): sofortige Aktualisierung. 0 schaltet ihn ab: die Player werden dann alle 5 Sekunden gelesen.",
+        "es": "Lyrion anuncia cada cambio por este puerto (9090 por defecto): actualización inmediata. 0 lo desactiva: los reproductores se leen cada 5 segundos."
+      },
+      "required": false,
+      "default": 9090,
+      "min": 0,
+      "max": 65535
+    },
+    {
+      "key": "language",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
-      "required": false,
-      "default": "celsius",
-      "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
-      ]
-    },
-    {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "label": {
+        "en": "Language of the feature names",
+        "fr": "Langue des noms de fonctionnalités",
+        "de": "Sprache der Funktionsnamen",
+        "es": "Idioma de los nombres de funciones"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "Also used for the error messages of the scene actions.",
+        "fr": "Sert aussi aux messages d'erreur des actions de scène.",
+        "de": "Gilt auch für die Fehlermeldungen der Szenenaktionen.",
+        "es": "También se usa en los mensajes de error de las acciones de escena."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
-    }
-  ],
-  "actions": [
-    {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
-      "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
+      "default": "fr",
+      "options": [
         {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
         }
       ]
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "playback_started",
+      "label": {
+        "en": "Playback started",
+        "fr": "Lecture démarrée",
+        "de": "Wiedergabe gestartet",
+        "es": "Reproducción iniciada"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "A player starts or resumes playing.",
+        "fr": "Un lecteur commence ou reprend la lecture.",
+        "de": "Ein Player beginnt oder setzt die Wiedergabe fort.",
+        "es": "Un reproductor empieza o reanuda la reproducción."
       },
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
+          "label": {
+            "en": "Player",
+            "fr": "Lecteur",
+            "de": "Player",
+            "es": "Reproductor"
+          },
+          "required": false
+        }
+      ],
+      "variables": [
+        {
+          "key": "player",
+          "type": "string",
+          "label": {
+            "en": "Player name",
+            "fr": "Nom du lecteur",
+            "de": "Name des Players",
+            "es": "Nombre del reproductor"
+          }
         },
         {
-          "key": "target",
+          "key": "title",
+          "type": "string",
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          }
+        },
+        {
+          "key": "artist",
+          "type": "string",
+          "label": {
+            "en": "Artist",
+            "fr": "Artiste",
+            "de": "Interpret",
+            "es": "Artista"
+          }
+        },
+        {
+          "key": "album",
+          "type": "string",
+          "label": {
+            "en": "Album",
+            "fr": "Album",
+            "de": "Album",
+            "es": "Álbum"
+          }
+        }
+      ]
+    },
+    {
+      "key": "playback_stopped",
+      "label": {
+        "en": "Playback stopped",
+        "fr": "Lecture arrêtée",
+        "de": "Wiedergabe beendet",
+        "es": "Reproducción detenida"
+      },
+      "description": {
+        "en": "A player stops playing: paused, stopped or turned off.",
+        "fr": "Un lecteur cesse de jouer : pause, arrêt ou extinction.",
+        "de": "Ein Player hört auf zu spielen: Pause, Stopp oder ausgeschaltet.",
+        "es": "Un reproductor deja de sonar: pausa, parada o apagado."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Player",
+            "fr": "Lecteur",
+            "de": "Player",
+            "es": "Reproductor"
+          },
+          "required": false
+        },
+        {
+          "key": "state",
           "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
+          "label": {
+            "en": "Reason",
+            "fr": "Raison",
+            "de": "Grund",
+            "es": "Motivo"
+          },
           "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
+            {
+              "value": "paused",
+              "label": {
+                "en": "Paused",
+                "fr": "Mis en pause",
+                "de": "Pausiert",
+                "es": "En pausa"
+              }
+            },
+            {
+              "value": "stopped",
+              "label": {
+                "en": "Stopped",
+                "fr": "Arrêté",
+                "de": "Gestoppt",
+                "es": "Detenido"
+              }
+            },
+            {
+              "value": "off",
+              "label": {
+                "en": "Turned off",
+                "fr": "Éteint",
+                "de": "Ausgeschaltet",
+                "es": "Apagado"
+              }
+            }
           ]
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "player",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Player name",
+            "fr": "Nom du lecteur",
+            "de": "Name des Players",
+            "es": "Nombre del reproductor"
+          }
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          }
+        },
+        {
+          "key": "artist",
+          "type": "string",
+          "label": {
+            "en": "Artist",
+            "fr": "Artiste",
+            "de": "Interpret",
+            "es": "Artista"
+          }
+        },
+        {
+          "key": "album",
+          "type": "string",
+          "label": {
+            "en": "Album",
+            "fr": "Album",
+            "de": "Album",
+            "es": "Álbum"
+          }
+        },
+        {
+          "key": "state",
+          "type": "string",
+          "label": {
+            "en": "Reason (key)",
+            "fr": "Raison (clé)",
+            "de": "Grund (Schlüssel)",
+            "es": "Motivo (clave)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "track_changed",
+      "label": {
+        "en": "Song changed",
+        "fr": "Morceau changé",
+        "de": "Titel gewechselt",
+        "es": "Canción cambiada"
+      },
+      "description": {
+        "en": "A player starts a new song, or a radio announces a new title.",
+        "fr": "Un lecteur passe à un nouveau morceau, ou une radio annonce un nouveau titre.",
+        "de": "Ein Player spielt einen neuen Titel, oder ein Radio meldet einen neuen Titel.",
+        "es": "Un reproductor pasa a otra canción, o una radio anuncia un título nuevo."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Player",
+            "fr": "Lecteur",
+            "de": "Player",
+            "es": "Reproductor"
+          },
+          "required": false
+        }
+      ],
+      "variables": [
+        {
+          "key": "player",
+          "type": "string",
+          "label": {
+            "en": "Player name",
+            "fr": "Nom du lecteur",
+            "de": "Name des Players",
+            "es": "Nombre del reproductor"
+          }
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          }
+        },
+        {
+          "key": "artist",
+          "type": "string",
+          "label": {
+            "en": "Artist",
+            "fr": "Artiste",
+            "de": "Interpret",
+            "es": "Artista"
+          }
+        },
+        {
+          "key": "album",
+          "type": "string",
+          "label": {
+            "en": "Album",
+            "fr": "Album",
+            "de": "Album",
+            "es": "Álbum"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "play_favorite",
+      "label": {
+        "en": "Play a Lyrion favorite",
+        "fr": "Jouer un favori Lyrion",
+        "de": "Lyrion-Favoriten abspielen",
+        "es": "Reproducir un favorito de Lyrion"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "A radio, a playlist or an album of the Lyrion favorites, by name or position.",
+        "fr": "Une radio, une playlist ou un album des favoris Lyrion, par nom ou position.",
+        "de": "Ein Radio, eine Playlist oder ein Album der Lyrion-Favoriten, nach Name oder Position.",
+        "es": "Una radio, una lista o un álbum de los favoritos de Lyrion, por nombre o posición."
+      },
+      "timeout_seconds": 20,
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
+          "label": {
+            "en": "Player",
+            "fr": "Lecteur",
+            "de": "Player",
+            "es": "Reproductor"
+          },
+          "required": true
+        },
+        {
+          "key": "favorite",
+          "type": "string",
+          "label": {
+            "en": "Favorite (name or position)",
+            "fr": "Favori (nom ou position)",
+            "de": "Favorit (Name oder Position)",
+            "es": "Favorito (nombre o posición)"
+          },
+          "placeholder": {
+            "en": "e.g. FIP or 1",
+            "fr": "ex. FIP ou 1",
+            "de": "z. B. FIP oder 1",
+            "es": "p. ej. FIP o 1"
+          },
           "required": true
         }
       ],
       "outputs": [
         {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "key": "favorite",
+          "type": "string",
+          "label": {
+            "en": "Favorite played",
+            "fr": "Favori joué",
+            "de": "Gespielter Favorit",
+            "es": "Favorito reproducido"
+          }
+        }
+      ]
+    },
+    {
+      "key": "set_volume",
+      "label": {
+        "en": "Set the volume",
+        "fr": "Régler le volume",
+        "de": "Lautstärke einstellen",
+        "es": "Ajustar el volumen"
+      },
+      "description": {
+        "en": "Of one player, or of every player when none is chosen.",
+        "fr": "D'un lecteur, ou de tous les lecteurs si aucun n'est choisi.",
+        "de": "Eines Players, oder aller Player, wenn keiner gewählt ist.",
+        "es": "De un reproductor, o de todos si no se elige ninguno."
+      },
+      "timeout_seconds": 20,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Player",
+            "fr": "Lecteur",
+            "de": "Player",
+            "es": "Reproductor"
+          },
+          "required": false
+        },
+        {
+          "key": "volume",
+          "type": "number",
+          "label": {
+            "en": "Volume (%)",
+            "fr": "Volume (%)",
+            "de": "Lautstärke (%)",
+            "es": "Volumen (%)"
+          },
+          "required": true,
+          "min": 0,
+          "max": 100
+        }
+      ]
+    },
+    {
+      "key": "pause_all",
+      "label": {
+        "en": "Pause every player",
+        "fr": "Mettre tous les lecteurs en pause",
+        "de": "Alle Player pausieren",
+        "es": "Pausar todos los reproductores"
+      },
+      "description": {
+        "en": "Every player of the Lyrion server that is playing.",
+        "fr": "Tous les lecteurs du serveur Lyrion en cours de lecture.",
+        "de": "Alle spielenden Player des Lyrion-Servers.",
+        "es": "Todos los reproductores del servidor Lyrion que están sonando."
+      },
+      "timeout_seconds": 20,
+      "fields": [],
+      "outputs": [
+        {
+          "key": "paused",
+          "type": "number",
+          "label": {
+            "en": "Players paused",
+            "fr": "Lecteurs mis en pause",
+            "de": "Pausierte Player",
+            "es": "Reproductores pausados"
+          }
+        }
+      ]
+    },
+    {
+      "key": "announce",
+      "label": {
+        "en": "Play an announcement",
+        "fr": "Diffuser une annonce",
+        "de": "Durchsage abspielen",
+        "es": "Reproducir un anuncio"
+      },
+      "description": {
+        "en": "Plays an audio address (MP3...), then gives the music back where it was.",
+        "fr": "Joue une adresse audio (MP3…), puis rend la musique là où elle en était.",
+        "de": "Spielt eine Audioadresse (MP3 …) und setzt die Musik dann dort fort, wo sie war.",
+        "es": "Reproduce una dirección de audio (MP3…) y luego devuelve la música donde estaba."
+      },
+      "timeout_seconds": 30,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Player",
+            "fr": "Lecteur",
+            "de": "Player",
+            "es": "Reproductor"
+          },
+          "required": true
+        },
+        {
+          "key": "url",
+          "type": "string",
+          "label": {
+            "en": "Audio address (http or https)",
+            "fr": "Adresse audio (http ou https)",
+            "de": "Audioadresse (http oder https)",
+            "es": "Dirección de audio (http o https)"
+          },
+          "placeholder": {
+            "en": "e.g. https://example.com/doorbell.mp3",
+            "fr": "ex. https://example.com/sonnette.mp3",
+            "de": "z. B. https://example.com/klingel.mp3",
+            "es": "p. ej. https://example.com/timbre.mp3"
+          },
+          "required": true
+        },
+        {
+          "key": "volume",
+          "type": "number",
+          "label": {
+            "en": "Volume of the announcement (%)",
+            "fr": "Volume de l'annonce (%)",
+            "de": "Lautstärke der Durchsage (%)",
+            "es": "Volumen del anuncio (%)"
+          },
+          "description": {
+            "en": "Empty: the current volume.",
+            "fr": "Vide : le volume actuel.",
+            "de": "Leer: die aktuelle Lautstärke.",
+            "es": "Vacío: el volumen actual."
+          },
+          "required": false,
+          "min": 0,
+          "max": 100
+        }
+      ]
+    },
+    {
+      "key": "join_group",
+      "label": {
+        "en": "Join a group of players",
+        "fr": "Rejoindre un groupe de lecteurs",
+        "de": "Einer Player-Gruppe beitreten",
+        "es": "Unirse a un grupo de reproductores"
+      },
+      "description": {
+        "en": "The player plays in sync with another one (Lyrion synchronization).",
+        "fr": "Le lecteur joue en même temps qu'un autre (synchronisation Lyrion).",
+        "de": "Der Player spielt synchron mit einem anderen (Lyrion-Synchronisation).",
+        "es": "El reproductor suena a la vez que otro (sincronización de Lyrion)."
+      },
+      "timeout_seconds": 20,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Player",
+            "fr": "Lecteur",
+            "de": "Player",
+            "es": "Reproductor"
+          },
+          "required": true
+        },
+        {
+          "key": "target",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Player to join",
+            "fr": "Lecteur à rejoindre",
+            "de": "Player, dem beigetreten wird",
+            "es": "Reproductor al que unirse"
+          },
+          "required": true
+        }
+      ]
+    },
+    {
+      "key": "leave_group",
+      "label": {
+        "en": "Leave the group",
+        "fr": "Quitter le groupe",
+        "de": "Gruppe verlassen",
+        "es": "Salir del grupo"
+      },
+      "description": {
+        "en": "The player plays on its own again.",
+        "fr": "Le lecteur joue de nouveau seul.",
+        "de": "Der Player spielt wieder allein.",
+        "es": "El reproductor vuelve a sonar solo."
+      },
+      "timeout_seconds": 20,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Player",
+            "fr": "Lecteur",
+            "de": "Player",
+            "es": "Reproductor"
+          },
+          "required": true
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "players",
+      "label": {
+        "en": "Lyrion players",
+        "fr": "Lecteurs Lyrion",
+        "de": "Lyrion-Player",
+        "es": "Reproductores Lyrion"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "What every player plays, or one player with its cover and buttons.",
+        "fr": "Ce que joue chaque lecteur, ou un lecteur avec sa pochette et ses boutons.",
+        "de": "Was jeder Player spielt, oder ein Player mit Cover und Tasten.",
+        "es": "Lo que suena en cada reproductor, o uno con su carátula y botones."
+      },
+      "icon": "music",
+      "action_timeout_seconds": 20,
+      "settings": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Player",
+            "fr": "Lecteur",
+            "de": "Player",
+            "es": "Reproductor"
+          },
+          "required": false,
+          "description": {
+            "en": "Empty: every player.",
+            "fr": "Vide : tous les lecteurs.",
+            "de": "Leer: alle Player.",
+            "es": "Vacío: todos los reproductores."
+          }
+        }
+      ]
     }
   ]
 }

@@ -1,0 +1,124 @@
+# Lyrion Music Server
+
+Steuere die Player deines **Lyrion Music Server** (früher Logitech Media Server, LMS) aus Gladys:
+Squeezebox Touch, Radio, Boom, Duet, piCorePlayer, squeezelite und jeden kompatiblen Player. Gladys
+verfolgt, was jeder Player spielt, steuert ihn, spielt deine Lyrion-Favoriten, pausiert das ganze
+Haus und spielt Durchsagen, nach denen die Musik dort weitergeht, wo sie war.
+
+Getestet mit Lyrion Music Server 9.1 und squeezelite-Playern, nicht mit einer physischen Squeezebox:
+Rückmeldungen sind willkommen. Diese Integration ist weder mit dem Lyrion-Projekt noch mit Logitech
+verbunden.
+
+## Voraussetzungen
+
+- Gladys Assistant 5.1 oder neuer.
+- Ein Lyrion Music Server, den Gladys im lokalen Netzwerk erreicht: Web-Port **9000** und, für
+  sofortige Aktualisierungen, CLI-Port **9090** (standardmäßig offen). Logitech Media Server 8 hat
+  dieselbe API und sollte ebenfalls funktionieren.
+- Auf den Playern ist nichts zu installieren.
+
+## Konfiguration
+
+1. Öffne unter **Integrationen** die Integration **Lyrion Music Server** und gib die
+   **Serveradresse** ein (IP-Adresse oder Hostname, z. B. `192.168.1.20`). Ändere den **Web-Port**,
+   wenn er nicht 9000 ist.
+2. Wenn in Lyrion der Passwortschutz aktiv ist (**Einstellungen → Erweitert → Sicherheit**), gib
+   **Benutzername** und **Passwort** ein.
+3. **CLI-Port**: Lyrion meldet darüber jede Änderung (standardmäßig 9090), Gladys sieht also sofort
+   einen neuen Titel oder eine Lautstärkeänderung. `0` schaltet ihn ab: Gladys liest die Player dann
+   alle 5 Sekunden.
+4. **Sprache der Funktionsnamen**: standardmäßig Französisch. Diese gilt auch für die Fehlermeldungen
+   der Szenenaktionen.
+5. Öffne den Tab **Entdecken**: Jeder Player des Servers ist dort. Klicke auf **Zu Gladys
+   hinzufügen**.
+
+## Geräte
+
+Ein Gerät pro Player, erkannt an seiner Lyrion-Player-ID (der MAC-Adresse einer Squeezebox oder von
+squeezelite): Ein umbenannter Player oder eine neue IP-Adresse behält dasselbe Gerät.
+
+| Funktion                         | Was sie tut                                                                                                |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Ein/Aus                          | Schaltet den Player ein oder aus (die Ein/Aus-Taste von Lyrion).                                           |
+| Wiedergabestatus                 | 1, solange der Player spielt, sonst 0 (Pause, Stopp, aus).                                                 |
+| Wiedergabe, Pause                | Abspielen oder fortsetzen, pausieren.                                                                      |
+| Stopp                            | Beendet die Wiedergabe.                                                                                    |
+| Vorheriger Titel, Nächster Titel | Vorheriger oder nächster Titel der Warteschlange.                                                          |
+| Lautstärke                       | 0 bis 100.                                                                                                 |
+| Stumm                            | Schaltet den Ton stumm oder wieder ein (jeder Druck wechselt).                                             |
+| Titel, Interpret                 | Was gerade spielt; bei einem Radio der gemeldete Titel, sonst der Sender.                                  |
+| Durchsage                        | Ziel der Szenenaktion **Auf einem Lautsprecher sprechen** von Gladys: spricht, dann geht die Musik weiter. |
+
+Die Wiedergabetasten und die Lautstärke gehören zur Kategorie **Musik** von Gladys: Die Box
+**Musik** des Dashboards steuert sie. Das Widget **Lyrion-Player** unten zeigt den Rest.
+
+## Dashboard-Widget
+
+**Lyrion-Player** hat eine optionale Einstellung, einen **Player**:
+
+- **Leer**: alle Player des Servers in einer Liste, mit dem, was sie spielen, und ihrem Status, dazu
+  die Taste **Alle pausieren**, solange etwas spielt.
+- **Ein Player**: das Cover (wenn Lyrion eines hat), der Titel, Interpret und Album, der Status, die
+  Lautstärke, die Gruppe, mit der er spielt, und vier Tasten: Abspielen/Pause, Weiter, Leiser und
+  Lauter. Ein ausgeschalteter Player bietet **Einschalten** an.
+
+## Szenen-Auslöser
+
+| Auslöser             | Wann                                                                          | Filter                                            | Variablen                                 |
+| -------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------- | ----------------------------------------- |
+| Wiedergabe gestartet | Ein Player beginnt oder setzt die Wiedergabe fort.                            | Player                                            | Name des Players, Titel, Interpret, Album |
+| Wiedergabe beendet   | Ein Player hört auf zu spielen.                                               | Player, Grund (pausiert, gestoppt, ausgeschaltet) | Dieselben, dazu der Grund (Schlüssel)     |
+| Titel gewechselt     | Ein Player spielt einen neuen Titel, oder ein Radio meldet einen neuen Titel. | Player                                            | Name des Players, Titel, Interpret, Album |
+
+Die Auslöser spiegeln wider, was die Player wirklich tun, egal wer es verlangt hat: Eine Szene, die
+bei „Wiedergabe beendet“ die Musik wieder startet, liefe im Kreis. Nichts wird ausgelöst für das, was
+beim Start der Integration schon spielte, und nichts während einer Durchsage.
+
+## Szenenaktionen
+
+| Aktion                        | Felder                                                  | Ergebnis                                 |
+| ----------------------------- | ------------------------------------------------------- | ---------------------------------------- |
+| Lyrion-Favoriten abspielen    | Player, Favorit (Name oder Position: `FIP`, `1`)        | Schaltet den Player ein und spielt ihn.  |
+| Lautstärke einstellen         | Player (leer: alle Player), Lautstärke                  |                                          |
+| Alle Player pausieren         | —                                                       | Ausgabe: die Zahl der pausierten Player. |
+| Durchsage abspielen           | Player, Audioadresse (http/https), optionale Lautstärke | Spielt sie, dann geht die Musik weiter.  |
+| Einer Player-Gruppe beitreten | Player, Player, dem beigetreten wird                    | Beide spielen synchron (Lyrion-Sync).    |
+| Gruppe verlassen              | Player                                                  | Der Player spielt wieder allein.         |
+
+Ein Favorit wird über seinen Namen gefunden (Groß- und Kleinschreibung und Akzente egal), sonst über
+seine Position unter den abspielbaren Favoriten der obersten Ebene von Lyrion (Ordner zählen nicht).
+Eine Durchsage wird hinter dem aktuellen Titel eingefügt, gespielt und wieder entfernt: Der Player
+bekommt Titel, Position, Lautstärke, Status, Wiederholungsmodus und Ein/Aus zurück.
+
+## Szenenbeispiele
+
+- **Morgenradio**: werktags um 7:30 _Lyrion-Favoriten abspielen_ `FIP` auf dem Küchen-Player, dann
+  _Lautstärke einstellen_ auf 25.
+- **Türklingel**: wenn es klingelt, _Durchsage abspielen_ mit der Adresse einer Gong-MP3 auf jedem
+  Player im Erdgeschoss, Lautstärke 60.
+- **Haus verlassen**: wenn die letzte Person geht, _Alle Player pausieren_.
+- **Party**: _Einer Player-Gruppe beitreten_ für Wohnzimmer und Küche, und um Mitternacht _Gruppe
+  verlassen_.
+
+## Fehlerbehebung
+
+- **„Der Lyrion-Server antwortet nicht“**: Prüfe Adresse und Web-Port (öffne `http://<adresse>:9000`
+  in einem Browser im selben Netzwerk).
+- **„Lyrion hat Benutzername oder Passwort abgelehnt“**: dieselben Zugangsdaten wie in der
+  Weboberfläche von Lyrion.
+- **Änderungen brauchen 5 Sekunden**: Der CLI-Port ist geschlossen oder abgeschaltet; Gladys liest
+  die Player dann alle 5 Sekunden. Prüfe Port 9090 oder das Plugin „CLI“ von Lyrion.
+- **Ein Player fehlt**: Er muss mit diesem Server verbunden sein (er erscheint in der Weboberfläche
+  von Lyrion); starte dann im Tab Entdecken eine neue Suche.
+- Protokolle: auf der Seite der Integration; `LOG_LEVEL=debug` zeigt jede Abfrage.
+
+## Grenzen
+
+- Ein Lyrion-Server pro Integration; keine automatische Erkennung (Lyrion antwortet nur auf
+  Broadcast-Anfragen, die die Sandbox nicht weiterleitet): Gib seine Adresse ein.
+- Die Musikfunktionen haben keine Zeile in der Box „Geräte eines Raums“ von Gladys: Nutze die Box
+  Musik oder das Widget Lyrion-Player.
+- Eine Durchsage auf einer Gruppe spielt auf der ganzen Gruppe; mit Zufallswiedergabe kann die
+  zurückgegebene Position abweichen. Ein endloser Stream wird nach 10 Minuten abgebrochen.
+- Nur die oberste Ebene der Favoriten wird angeboten.
+- Nur lokales Netzwerk: Die Integration spricht mit dem Server, nie mit einem Cloud-Dienst.

@@ -1,0 +1,40 @@
+{
+  "id": 1,
+  "params": ["02:00:00:00:00:01", ["status", "-", 1, "tags:acdjKlNu"]],
+  "result": {
+    "player_name": "Kitchen",
+    "player_connected": 1,
+    "player_ip": "192.0.2.3:44410",
+    "power": 1,
+    "signalstrength": 0,
+    "mode": "stop",
+    "time": 0,
+    "rate": 1,
+    "duration": 40,
+    "can_seek": 1,
+    "mixer volume": -40,
+    "playlist repeat": 0,
+    "playlist shuffle": 0,
+    "playlist mode": "off",
+    "seq_no": 0,
+    "playlist_cur_index": "0",
+    "playlist_timestamp": 1791995046.89536,
+    "playlist_tracks": 2,
+    "randomplay": 0,
+    "digital_volume_control": 1,
+    "use_volume_control": 1,
+    "playlist_loop": [
+      {
+        "duration": 40,
+        "title": "01 Morning Song",
+        "album": "No Album",
+        "playlist index": 0,
+        "coverart": "0",
+        "id": 1,
+        "url": "file:///music/01%20Morning%20Song.wav",
+        "artist": "No Artist"
+      }
+    ]
+  },
+  "method": "slim.request"
+}

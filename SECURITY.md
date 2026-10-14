@@ -30,6 +30,15 @@ Gladys before reporting a problem.
 
 In scope: the code of this repository and the Docker image it publishes.
 
+What the integration holds: the address of the Lyrion server and, when its
+password protection is on, a user name and a password, kept by Gladys in the
+integration configuration and sent to the server in an HTTP basic
+authentication header and a CLI `login`, both in clear text on the local
+network (Lyrion offers nothing else). Nothing is written under `/data`. The
+integration only talks to the configured server (ports 9000 and 9090 by
+default): no cloud service, no inbound port. The audio addresses of the
+announcements are handed to the server, which fetches them itself.
+
 Out of scope: Gladys Assistant itself (see its
 [security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
-and the third-party services and devices the integration talks to.
+Lyrion Music Server and the players.

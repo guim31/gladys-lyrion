@@ -1,77 +1,138 @@
+// -----------------------------------------------------------------------------
+// The "Lyrion players" widget: both views fit the core vocabulary and budget
+// (validateWidgetContent), the buttons act on LMS, the cover is served.
+// -----------------------------------------------------------------------------
+
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validateWidgetContent } from '@gladysassistant/integration-sdk';
-import { createFakeGladys } from '@gladysassistant/integration-sdk/testing';
-import { buildDiscoveredDevices } from '../src/devices/index.js';
-import { simulateLanSession } from '../src/devices/plug.js';
-import { DEMO_STATUS_WIDGET, WIDGETS, refreshWidgets } from '../src/widgets.js';
-import { normalizeConfig } from '../src/config.js';
+import { validateWidgetContent, validateWidgetImage } from '@gladysassistant/integration-sdk';
+import { FakeLms, KITCHEN, SALON, SONGS } from './helpers/fakeLms.js';
+import { createWorld, deviceId, until } from './helpers/world.js';
 
-const gladys = createFakeGladys();
-const config = normalizeConfig();
-const demoStatus = WIDGETS[DEMO_STATUS_WIDGET];
+async function world(t, setup = () => {}) {
+  const lms = new FakeLms();
+  setup(lms);
+  const w = await createWorld({ lms });
+  t.after(() => w.app.stop());
+  await until(() => w.hub.players.get(KITCHEN)?.snapshot, 2000, 'first read');
+  return w;
+}
 
-// What the SDK passes to onWidgetGet, plus the config index.js adds.
-const getContent = (cfg = config) =>
-  demoStatus.get(gladys, { settings: {}, language: 'en', units: 'metric', config: cfg });
+const get = async (gladys, settings, language = 'en') => {
+  const ack = await gladys.fake.widgetGet('players', { settings, language });
+  assert.equal(ack.success, true, ack.error);
+  assert.deepEqual(validateWidgetContent(ack.data.content), [], 'rendered as sent');
+  return ack.data.content;
+};
 
-test('the demo_status content is rendered exactly as sent', async () => {
-  // [] = nothing the core would drop, truncate or trim to the content budget.
-  assert.deepEqual(validateWidgetContent(await getContent()), []);
-});
-
-test('the degraded plug connection content is valid too', async () => {
-  simulateLanSession(false);
-  try {
-    const content = await getContent();
-    assert.deepEqual(validateWidgetContent(content), []);
-    const status = content.components.find((component) => component.type === 'status');
-    assert.ok(
-      status.items.some((item) => item.color === 'warning'),
-      'degraded shows a warning',
-    );
-  } finally {
-    simulateLanSession(true);
-  }
-});
-
-test('the live tiles reference features the integration publishes', async () => {
-  const featureIds = new Set(
-    buildDiscoveredDevices(gladys, config).flatMap((device) =>
-      device.features.map((feature) => feature.external_id),
-    ),
+test('without a player: every player in a list, and "Pause all" while one plays', async (t) => {
+  const { gladys } = await world(t, (lms) => {
+    lms.load(KITCHEN, SONGS);
+    lms.player(SALON).power = 0;
+  });
+  const content = await get(gladys, {}, 'fr');
+  const [list, button] = content.components;
+  assert.equal(list.type, 'card-list');
+  assert.deepEqual(
+    list.items.map((i) => [i.title, i.subtitle, i.badge.text]),
+    [
+      ['Kitchen', 'The Larks – Morning Song', 'En lecture'],
+      ['Salon', '—', 'Éteint'],
+    ],
   );
-  const liveTiles = (await getContent()).components.filter((c) => c.device_feature);
-  assert.ok(liveTiles.length > 0, 'the template demonstrates a device-bound tile');
-  for (const tile of liveTiles) {
-    assert.ok(featureIds.has(tile.device_feature), `unknown feature ${tile.device_feature}`);
-  }
+  assert.equal(button.action.key, 'pause_all');
+  const ack = await gladys.fake.widgetAction('players', 'pause_all', {}, { settings: {} });
+  assert.equal(ack.data.message.fr, 'Tous les lecteurs sont en pause');
 });
 
-test('every button action of the content is handled and answers a short toast', async () => {
-  const buttons = (await getContent()).components.filter((c) => c.type === 'button' && c.action);
-  assert.ok(buttons.length > 0, 'the template demonstrates a widget action');
-  for (const { action } of buttons) {
-    const message = await demoStatus.action(gladys, {
-      actionKey: action.key,
-      params: action.params ?? {},
-      settings: {},
-      config,
-    });
-    assert.ok(message.en, 'the toast carries at least the mandatory `en` text');
-    assert.ok(message.en.length <= 200, 'toasts are capped at 200 characters');
-  }
-});
-
-test('an unknown widget action fails, so the user sees the error', async () => {
-  await assert.rejects(
-    demoStatus.action(gladys, { actionKey: 'unknown', params: {}, settings: {}, config }),
-    /Unknown widget action/,
+test('one player: cover, song, artist and album, state, four buttons', async (t) => {
+  const { gladys, lms } = await world(t, (lms) => lms.load(KITCHEN, SONGS));
+  const content = await get(gladys, { device: deviceId(KITCHEN) });
+  const types = content.components.map((c) => c.type);
+  assert.deepEqual(types, [
+    'image',
+    'text',
+    'text',
+    'status',
+    'button',
+    'button',
+    'button',
+    'button',
+  ]);
+  assert.equal(content.components[1].text, 'Morning Song');
+  assert.equal(content.components[2].text, 'The Larks · Daybreak · Kitchen');
+  assert.deepEqual(
+    content.components.slice(4).map((b) => b.action.key),
+    ['play_pause', 'next', 'volume_down', 'volume_up'],
   );
+
+  const image = await gladys.fake.widgetGetImage(content.components[0].key);
+  assert.equal(image.success, true, image.error);
+  assert.deepEqual(validateWidgetImage(image.data.image), []);
+  assert.equal(lms.requests.at(-1).path, '/music/a1b2c3d4/cover_300x300_o.jpg');
+
+  const act = (key) =>
+    gladys.fake.widgetAction('players', key, {}, { settings: { device: deviceId(KITCHEN) } });
+  await act('play_pause');
+  assert.equal(lms.player(KITCHEN).mode, 'pause');
+  await act('volume_up');
+  assert.equal(lms.player(KITCHEN).volume, 55);
+  await act('next');
+  assert.equal(lms.player(KITCHEN).index, 1);
 });
 
-test('refreshWidgets nudges every widget', () => {
-  const fresh = createFakeGladys();
-  refreshWidgets(fresh);
-  assert.deepEqual(fresh.fake.widgetRefreshes, Object.keys(WIDGETS));
+test('a song without cover has no image; an off player offers "Turn on"', async (t) => {
+  const { gladys, lms, hub } = await world(t, (lms) => {
+    lms.load(KITCHEN, SONGS, { index: 2 });
+    lms.player(SALON).power = 0;
+  });
+  const kitchen = await get(gladys, { device: deviceId(KITCHEN) });
+  assert.notEqual(kitchen.components[0].type, 'image');
+  const salon = await get(gladys, { device: deviceId(SALON) }, 'de');
+  const buttons = salon.components.filter((c) => c.type === 'button');
+  assert.deepEqual(
+    buttons.map((b) => [b.action.key, b.label]),
+    [['power_on', 'Einschalten']],
+  );
+  await gladys.fake.widgetAction(
+    'players',
+    'power_on',
+    {},
+    { settings: { device: deviceId(SALON) } },
+  );
+  assert.equal(lms.player(SALON).power, 1);
+  await until(() => hub.players.get(SALON).snapshot.power, 2000, 'on');
+});
+
+test('a group shows its members; a removed player and an empty server have a message', async (t) => {
+  const { gladys, hub, lms } = await world(t, (lms) => {
+    lms.load(KITCHEN, SONGS);
+    lms.player(SALON).master = KITCHEN;
+  });
+  const content = await get(gladys, { device: deviceId(KITCHEN) });
+  const status = content.components.find((c) => c.type === 'status');
+  assert.deepEqual(status.items.at(-1), { label: 'Group', value: 'Salon', icon: 'link' });
+
+  const gone = await get(gladys, { device: 'ext:test-integration:player:nope' }, 'es');
+  assert.equal(gone.components[0].text, 'Este reproductor ya no está en el servidor Lyrion.');
+  lms.players.clear();
+  hub.players.clear();
+  const empty = await get(gladys, {}, 'fr');
+  assert.match(empty.components[0].text, /Aucun lecteur/);
+});
+
+test('a failing button resolves a toast in the four languages', async (t) => {
+  const { gladys, lms } = await world(t);
+  lms.down = true;
+  const ack = await gladys.fake.widgetAction(
+    'players',
+    'volume_up',
+    {},
+    {
+      settings: { device: deviceId(KITCHEN) },
+    },
+  );
+  assert.equal(ack.success, true);
+  assert.deepEqual(Object.keys(ack.data.message), ['en', 'fr', 'de', 'es']);
+  assert.match(ack.data.message.en, /does not answer/);
 });

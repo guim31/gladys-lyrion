@@ -1,41 +1,48 @@
 // -----------------------------------------------------------------------------
-// Scene actions (SDK v0.14+, Gladys 5.1+).
-//
-// A scene action is an OPERATION a scene author places in a scene, with
-// parameters and a result: "identify this device", "take a snapshot", "clean
-// these rooms". Each one is declared in the manifest `scene_actions` field
-// (key, label, `fields` in the config_schema grammar, scalar `outputs`) and
-// handled here, keyed by that same `key`; index.js registers every entry with
-// `gladys.onSceneAction(key, ...)`.
-//
-// Scene TRIGGERS are the other direction ("this happened"): they are fired by
-// the device that observes the event, see src/devices/motionSensor.js.
-//
-// The rules that matter:
-//   - `fields` arrive RESOLVED: scene variables substituted, defaults applied,
-//     validated by the core; a `"source": "devices"` field is the chosen
-//     device external_id;
-//   - resolve an object of the declared `outputs` (scalars only), readable by
-//     the following actions of the scene, or `undefined` for none. Keys not
-//     declared in the manifest are dropped by the core;
-//   - throwing fails THIS action only: the scene logs it and continues. A
-//     scene action is never a condition: return an output and let the scene
-//     author gate on it;
-//   - never fire a scene event as a consequence of a received action: a scene
-//     bound to that event would loop through the integration.
+// Scene actions (manifest `scene_actions`). They receive the resolved fields
+// and no language: errors follow the configured `language`.
+// The core already sets a volume, plays, pauses and skips through the device
+// features; these actions add what it cannot: favorites, every player at
+// once, announcements that give the music back, groups.
 // -----------------------------------------------------------------------------
 
-import { createLogger } from '@gladysassistant/integration-sdk';
-import { signalDevice } from './devices/index.js';
-
-const logger = createLogger({ name: 'scenes' });
-
 export const SCENE_ACTIONS = {
-  // The ack is awaited under the action's `timeout_seconds` (15 s in the
-  // manifest), counted from the moment the scene reaches the action.
-  async identify_device(gladys, { fields, config }) {
-    logger.info(`Scene action identify_device <- ${fields.device}`);
-    const signalled = await signalDevice(gladys, fields.device, config);
-    return { signalled };
+  async play_favorite(hub, { fields }) {
+    const player = hub.playerOf(fields.device);
+    const favorite = await hub.playFavorite(player, fields.favorite);
+    return { favorite: favorite.name };
+  },
+
+  /** No player chosen: every connected player of the server. */
+  async set_volume(hub, { fields }) {
+    if (typeof fields.device === 'string' && fields.device !== '') {
+      await hub.setVolume(hub.playerOf(fields.device), fields.volume);
+      return undefined;
+    }
+    await hub.refresh();
+    const players = [...hub.players.values()].filter((p) => p.connected);
+    for (const player of players) {
+      await hub.setVolume(player, fields.volume);
+    }
+    return undefined;
+  },
+
+  async pause_all(hub) {
+    return { paused: await hub.pauseAll() };
+  },
+
+  async announce(hub, { fields }) {
+    await hub.announce(hub.playerOf(fields.device), fields.url, fields.volume ?? null);
+    return undefined;
+  },
+
+  async join_group(hub, { fields }) {
+    await hub.join(hub.playerOf(fields.device), hub.playerOf(fields.target));
+    return undefined;
+  },
+
+  async leave_group(hub, { fields }) {
+    await hub.leave(hub.playerOf(fields.device));
+    return undefined;
   },
 };

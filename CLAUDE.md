@@ -16,8 +16,8 @@ its only runtime dependency. It started from the official JavaScript template.
 ```bash
 npm install
 npm test                                  # node --test, the built-in runner
-node --test test/devices.test.js          # one file
-node --test --test-name-pattern "plug"    # tests whose name matches
+node --test test/hub.test.js              # one file
+node --test --test-name-pattern "announce" # tests whose name matches
 npm run lint                              # ESLint
 npm run format:check                      # Prettier, as the CI runs it
 npm run format                            # Prettier, fix in place
@@ -32,15 +32,20 @@ pushing.
 
 ```
 index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
+src/app.js                        registers every SDK handler on a Gladys client (tests use the same)
+src/hub.js                        the server, its players, states, scene events, commands, announcements
+src/lms/client.js                 JSON-RPC client (POST /jsonrpc.js, basic auth, timeouts, images)
+src/lms/listener.js               CLI `listen 1` on port 9090: "player changed" signals, reconnection
+src/lms/model.js                  LMS answers -> snapshots (status, serverstatus, favorites)
+src/devices.js                    player -> Gladys device, snapshot -> feature states
 src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+src/widgets.js                    dashboard widget "players" (manifest `widgets`)
+src/texts.js                      every text of the container, in en/fr/de/es
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
-gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
+gladys-assistant-integration.json manifest: name, config_schema, triggers, actions, widget...
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (en and fr mandatory)
 test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+test/helpers/fakeLms.js           scripted Lyrion server (JSON-RPC + CLI) built on test/fixtures/lms/
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,8 +75,9 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** exists in English, French, German and Spanish: action
+  messages, widget texts, feature names, manifest texts, and `docs/{en,fr,de,es}.md`,
+  kept in sync (`test/i18n.test.js`).
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -233,3 +239,42 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## Lyrion Music Server (appris sur cette intégration)
+
+Faits vérifiés sur un vrai Lyrion Music Server 9.1.1 (image `lmscommunity/lyrionmusicserver`) avec
+deux lecteurs squeezelite 1.9.9 en Docker. Réponses enregistrées dans `test/fixtures/lms/`.
+
+- **API** : `POST /jsonrpc.js`, `{ "method": "slim.request", "params": [<playerid ou "">, [commande…]] }`,
+  les commandes de la CLI. Authentification HTTP basique quand « Sécurité du serveur » est active
+  (401 sinon) ; la CLI (9090) veut alors `login <user> <pass>` (le mot de passe est masqué dans
+  l'écho) et, sans lui, **répond `listen 1` puis ferme** : la souscription ne compte qu'après 1,5 s
+  sans fermeture (`SETTLE_MS`).
+- **LMS ne répond jamais à une commande ou un lecteur inconnus** : la requête pend. Délai de 5 s sur
+  chaque appel.
+- `status - 1 tags:acdjKlNu` : `mixer volume` **négatif quand le son est coupé** (le niveau à rétablir) ;
+  `sync_master` / `sync_slaves` (liste séparée par des virgules) quand le lecteur est groupé ; une
+  pochette n'existe que si `coverart` vaut `"1"` (sinon LMS sert une image générique). Un fichier
+  sans étiquettes a pour artiste la chaîne `No Artist`.
+- **Piège LMS 9.1** : quand l'artiste d'un morceau est illisible (vu sur un morceau renommé par
+  `playlist preview`), le tag `a` fait disparaître **tout** `playlist_loop` : le client relit sans
+  `a` (`LmsClient.status`).
+- **`<A> sync <B>` met B dans le groupe de A** (A maître). `<B> sync -` le sort.
+- **Annonce** : `playlist preview url:… / cmd:stop` (ce que fait l'alarme de LMS) ne restaure rien
+  sur 9.1, même avec un `playlistdir` réglé. Méthode retenue, vérifiée : `playlist insert <url>`
+  (après le morceau courant), `playlist index <i+1>`, attendre la fin (index qui change ou `stop`),
+  puis `playlist delete <i+1>`, `playlist index <i>`, `time <t>`, et pause/stop/volume/sourdine/
+  répétition/marche rendus. Couper la répétition pendant l'annonce (répéter un morceau la jouerait
+  sans fin). Un flux injoignable passe aussitôt en `stop` sur l'annonce.
+- `favorites items 0 200` : `isaudio: 1` pour un favori jouable, `hasitems: 1` pour un dossier ;
+  `favorites playlist play item_id:<id>` le joue.
+- Événements CLI : `<playerid encodé> playlist newsong …`, `mixer volume 40`, `power 0`, `pause 1`,
+  `sync …`, des `prefset` et `menustatus` (bruit). Le hub n'analyse rien : tout événement déclenche
+  une relecture JSON-RPC (anti-rebond 300 ms).
+- **Banc de test** : la sortie ALSA `null` de squeezelite **n'a pas d'horloge** (un morceau de 40 s
+  est « joué » en 0,4 s, le lecteur repasse aussitôt en `stop`). Sortie `-o -` vers `pv -L` pour
+  jouer en temps réel. Fichiers WAV générés, dossier musical par `pref audiodir /music` puis
+  `rescan`.
+- La catégorie `music` (lecture, pause, volume…) n'a pas de ligne dans la boîte « appareils d'une
+  pièce » (DLNA, Kodi) : le widget de l'intégration compense ; `music/play_notification` reçoit
+  l'URL MP3 de l'action du cœur « Parler sur une enceinte ».

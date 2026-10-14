@@ -1,0 +1,22 @@
+{
+  "id": 1,
+  "method": "slim.request",
+  "result": {
+    "player_name": "Kitchen",
+    "player_connected": 1,
+    "player_ip": "192.0.2.3:55516",
+    "power": 1,
+    "signalstrength": 0,
+    "mode": "stop",
+    "mixer volume": 30,
+    "playlist repeat": 0,
+    "playlist shuffle": 0,
+    "playlist mode": "off",
+    "seq_no": 0,
+    "playlist_tracks": 0,
+    "randomplay": 0,
+    "digital_volume_control": 1,
+    "use_volume_control": 1
+  },
+  "params": ["02:00:00:00:00:01", ["status", "-", 1, "tags:acdjKlNu"]]
+}
