@@ -1,0 +1,26 @@
+{
+  "params": ["", ["favorites", "items", "0", "200"]],
+  "result": {
+    "title": "Favorites",
+    "loop_loop": [
+      {
+        "id": "6056ba35.0",
+        "name": "Night Radio",
+        "type": "audio",
+        "image": "html/images/cover.png",
+        "isaudio": 1,
+        "hasitems": 0
+      },
+      {
+        "id": "6056ba35.1",
+        "name": "My folder",
+        "image": "html/images/favorites.png",
+        "isaudio": 0,
+        "hasitems": 1
+      }
+    ],
+    "count": 2
+  },
+  "method": "slim.request",
+  "id": 1
+}

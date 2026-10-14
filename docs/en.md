@@ -1,61 +1,118 @@
-# Demo Devices Template
+# Lyrion Music Server
 
-This is the user documentation of the integration. Gladys re-hosts this file
-and shows a permanent **Documentation** link to it in the Configuration screen
-(in the user's language, with English as the fallback) — it is when
-configuring that the user needs it most. Keep the short onboarding hints in
-the `section` blocks of the manifest `config_schema`; put the long
-step-by-step (screenshots, troubleshooting…) here.
+Control the players of your **Lyrion Music Server** (formerly Logitech Media Server, LMS) from Gladys:
+Squeezebox Touch, Radio, Boom, Duet, piCorePlayer, squeezelite and every compatible player. Gladys
+follows what each player plays, controls it, plays your Lyrion favorites, pauses the whole house and
+plays announcements that give the music back where it was.
 
-## What you get
+Tested with Lyrion Music Server 9.1 and squeezelite players, not with a physical Squeezebox: feedback
+welcome. This integration is not affiliated with the Lyrion project nor with Logitech.
 
-Six demo devices show up after installation: a weather station (real data
-from Open-Meteo), a switch, a dimmable light, a smart plug with power
-metering, a motion sensor and a camera.
+## Requirements
+
+- Gladys Assistant 5.1 or later.
+- A Lyrion Music Server reachable from Gladys on the local network: web
+  port **9000** and, for instant updates, CLI port **9090** (both open by default). Logitech Media
+  Server 8 has the same API and should work too.
+- Nothing to install on the players.
 
 ## Configuration
 
-1. Open the **Configuration** tab of the integration.
-2. Set the **latitude** and **longitude** the demo weather station should
-   observe (they default to Paris), and pick your temperature unit.
-   The **refresh interval** sets how often the weather station and the
-   plug's power are read: every 5 minutes by default, every minute at most.
-3. Save: the devices appear in the **Discovery** tab, ready to be added.
+1. In **Integrations**, open **Lyrion Music Server** and type the **server address** (IP address or
+   host name, e.g. `192.168.1.20`). Change the **web port** if yours is not 9000.
+2. If password protection is on in Lyrion (**Settings → Advanced → Security**), type the **user name**
+   and the **password**.
+3. **CLI port**: Lyrion announces every change on it (9090 by default), so Gladys sees a new song or
+   a volume change at once. `0` turns it off: Gladys then reads the players every 5 seconds.
+4. **Language of the feature names**: French by default. It is also used for the error messages of
+   the scene actions.
+5. Open the **Discovery** tab: every player of the server is there. Click **Add to Gladys**.
 
-The **Prefer the local connection** toggle drives the demo plug: it reports
-the channel it actually uses as a badge (local or cloud), with an orange dot
-when it runs degraded (local refused, cloud fallback).
+## Devices
 
-## Actions
+One device per player, identified by its Lyrion player id (the MAC address of a Squeezebox or of
+squeezelite): renaming a player or changing its IP address keeps the same device.
 
-- **Test the weather provider** — performs a live request to Open-Meteo and
-  shows the current temperature and humidity under the button.
-- **Identify a device** — pick one of your devices in the list and it will
-  signal itself (the demo light "blinks" in the logs).
+| Feature        | What it does                                                                          |
+| -------------- | ------------------------------------------------------------------------------------- |
+| Power          | Turns the player on or off (Lyrion's power button).                                   |
+| Playback state | 1 while the player plays, 0 otherwise (paused, stopped, off).                         |
+| Play, Pause    | Play or resume, pause.                                                                |
+| Stop           | Stops the playback.                                                                   |
+| Previous, Next | Previous or next song of the queue.                                                   |
+| Volume         | 0 to 100.                                                                             |
+| Mute           | Mutes or unmutes (each press toggles).                                                |
+| Title, Artist  | What plays now; for a radio, the song it announces when it does, else the station.    |
+| Announcement   | Target of Gladys' **Talk on a speaker** scene action: speaks, then the music resumes. |
 
-## Scenes
+The playback buttons and the volume belong to the **Music** category of Gladys: the **Music** box of
+the dashboard drives them. The **Lyrion players** widget below shows the rest.
 
-The integration adds its own cards to the scene editor (Gladys 5.1 or
-later), under the **Integrations** category:
+## Dashboard widget
 
-- **Motion detected** (trigger) — starts the scene when a demo motion sensor
-  sees something move. Optionally pick the sensor and what moved (person,
-  animal); left empty, any detection matches. The following actions can
-  read what moved with `{{triggerEvent.data.target}}`.
-- **Identify a device** (action) — makes the chosen device signal itself.
-  It returns whether the device could signal itself, so the following
-  actions can depend on it.
+**Lyrion players** has one optional setting, a **player**:
 
-## Dashboard
+- **Empty**: every player of the server in a list, with what it plays and its state, and a
+  **Pause all** button while something plays.
+- **A player**: the cover (when Lyrion has one), the song, the artist and the album, the state, the
+  volume, the group it plays with, and four buttons: play/pause, next, volume − and volume +.
+  A player that is off offers **Turn on**.
 
-Add the **Demo status** widget to a dashboard: it shows the live
-temperature of the weather station and the power of the office plug, the
-connection the plug currently uses (orange when degraded) and the observed
-location. Its **Identify the light** button makes the demo light signal
-itself.
+## Scene triggers
+
+| Trigger          | When                                                          | Filters                                      | Variables                         |
+| ---------------- | ------------------------------------------------------------- | -------------------------------------------- | --------------------------------- |
+| Playback started | A player starts or resumes playing.                           | Player                                       | Player name, title, artist, album |
+| Playback stopped | A player stops playing.                                       | Player, reason (paused, stopped, turned off) | Same, plus the reason (key)       |
+| Song changed     | A player starts a new song, or a radio announces a new title. | Player                                       | Player name, title, artist, album |
+
+Triggers reflect what the players really do, whoever asked: a scene that starts the music on
+"Playback stopped" would loop. Nothing fires for what was already playing when the integration
+starts, nor during an announcement.
+
+## Scene actions
+
+| Action                  | Fields                                              | Result                                |
+| ----------------------- | --------------------------------------------------- | ------------------------------------- |
+| Play a Lyrion favorite  | Player, favorite (name or position: `FIP`, `1`)     | Turns the player on and plays it.     |
+| Set the volume          | Player (empty: every player), volume                |                                       |
+| Pause every player      | —                                                   | Output: the number of players paused. |
+| Play an announcement    | Player, audio address (http/https), optional volume | Plays it, then gives the music back.  |
+| Join a group of players | Player, player to join                              | Both play in sync (Lyrion sync).      |
+| Leave the group         | Player                                              | The player plays on its own again.    |
+
+A favorite is found by its name (case and accents ignored), else by its position among the playable
+favorites of the top level of Lyrion (folders do not count). An announcement is inserted after the
+current song, played, then removed: the player gets back its song, position, volume, state, repeat
+mode and power.
+
+## Scene examples
+
+- **Morning radio**: at 7:30 on weekdays, _Play a Lyrion favorite_ `FIP` on the kitchen player, then
+  _Set the volume_ to 25.
+- **Doorbell**: when the doorbell rings, _Play an announcement_ with the address of a chime MP3 on
+  the hall player (one action per player), at volume 60.
+- **Leaving home**: when the last person leaves, _Pause every player_.
+- **Party**: _Join a group_ for the living room and the kitchen, and _Leave the group_ at midnight.
 
 ## Troubleshooting
 
-The integration logs everything it does: check the integration logs from the
-Gladys UI (or `docker logs` on the host) with `LOG_LEVEL=debug` for the full
-detail.
+- **"The Lyrion server does not answer"**: check the address and the web port (open
+  `http://<address>:9000` in a browser from the same network).
+- **"Lyrion refused the user name or the password"**: same credentials as the Lyrion web interface.
+- **Changes take 5 seconds**: the CLI port is closed or off; Gladys reads the players every 5 seconds
+  instead. Check port 9090, or the "CLI" plugin of Lyrion.
+- **A player is missing**: it must be connected to this server (it shows in the Lyrion web
+  interface), then run a scan in the Discovery tab.
+- Logs: in the integration page; `LOG_LEVEL=debug` shows every read.
+
+## Limits
+
+- One Lyrion server per integration; no automatic discovery (Lyrion only answers broadcast queries,
+  which the sandbox does not carry): type its address.
+- The music features have no row in the "devices in a room" box of Gladys: use the Music box or the
+  Lyrion players widget.
+- An announcement on a group plays on the whole group; with shuffle on, the position given back may
+  differ. A stream that never ends is cut after 10 minutes.
+- Only the top level of the favorites is offered.
+- The local network only: the integration talks to the server, never to a cloud service.
