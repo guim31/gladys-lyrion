@@ -94,7 +94,7 @@ posición, volumen, estado, modo de repetición y encendido.
 - **Radio de la mañana**: a las 7:30 entre semana, _Reproducir un favorito de Lyrion_ `FIP` en el
   reproductor de la cocina, y luego _Ajustar el volumen_ a 25.
 - **Timbre**: cuando llaman a la puerta, _Reproducir un anuncio_ con la dirección de un MP3 de
-  campanilla en cada reproductor de la planta baja, a volumen 60.
+  campanilla en el reproductor de la entrada (una acción por reproductor), a volumen 60.
 - **Salir de casa**: cuando se va la última persona, _Pausar todos los reproductores_.
 - **Fiesta**: _Unirse a un grupo_ para el salón y la cocina, y _Salir del grupo_ a medianoche.
 

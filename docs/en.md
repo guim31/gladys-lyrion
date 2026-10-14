@@ -91,7 +91,7 @@ mode and power.
 - **Morning radio**: at 7:30 on weekdays, _Play a Lyrion favorite_ `FIP` on the kitchen player, then
   _Set the volume_ to 25.
 - **Doorbell**: when the doorbell rings, _Play an announcement_ with the address of a chime MP3 on
-  every player of the ground floor, at volume 60.
+  the hall player (one action per player), at volume 60.
 - **Leaving home**: when the last person leaves, _Pause every player_.
 - **Party**: _Join a group_ for the living room and the kitchen, and _Leave the group_ at midnight.
 

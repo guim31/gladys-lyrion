@@ -278,3 +278,11 @@ deux lecteurs squeezelite 1.9.9 en Docker. Réponses enregistrées dans `test/fi
 - La catégorie `music` (lecture, pause, volume…) n'a pas de ligne dans la boîte « appareils d'une
   pièce » (DLNA, Kodi) : le widget de l'intégration compense ; `music/play_notification` reçoit
   l'URL MP3 de l'action du cœur « Parler sur une enceinte ».
+- **Écart assumé à la note « seuls les appareils ajoutés sont lus »** : le hub lit tous les lecteurs
+  connectés (le widget et les déclencheurs en ont besoin, un `status` par lecteur et par cycle reste
+  léger) ; seuls les appareils ajoutés reçoivent des états.
+- **Annonce, fin et reprise** (relecture indépendante) : la fin est la première lecture hors de
+  l'emplacement ou en `stop` (un carillon est souvent fini avant la première lecture) ; une pause
+  sur l'annonce est celle de l'utilisateur (la musique revient en pause) ; si la file n'est plus la
+  nôtre (un favori lancé entre-temps), seuls volume, sourdine et répétition sont rendus ; serveur
+  perdu ou nouvelle configuration : abandon, rien n'est rejoué des heures plus tard.

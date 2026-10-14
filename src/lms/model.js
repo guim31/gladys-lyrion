@@ -63,6 +63,7 @@ export function parseStatus(result = {}) {
     title: tracks > 0 ? title : '',
     artist: tracks > 0 ? artist : '',
     album: tracks > 0 ? str(track.album) : '',
+    remote,
     station: remote ? str(track.remote_title) : '',
     url: str(track.url),
     trackId: track.id ?? null,

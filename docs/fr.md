@@ -93,7 +93,7 @@ sa position, son volume, son état, son mode de répétition et sa marche.
 - **Radio du matin** : à 7 h 30 en semaine, _Jouer un favori Lyrion_ `FIP` sur le lecteur de la
   cuisine, puis _Régler le volume_ à 25.
 - **Sonnette** : quand on sonne, _Diffuser une annonce_ avec l'adresse d'un MP3 de carillon sur
-  chaque lecteur du rez-de-chaussée, au volume 60.
+  le lecteur de l'entrée (une action par lecteur), au volume 60.
 - **Départ de la maison** : quand la dernière personne part, _Mettre tous les lecteurs en pause_.
 - **Soirée** : _Rejoindre un groupe_ pour le salon et la cuisine, et _Quitter le groupe_ à minuit.
 

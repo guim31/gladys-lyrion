@@ -242,7 +242,7 @@ export class FakeLms {
     const sub = args[0];
     switch (name) {
       case 'status':
-        return this.status(player);
+        return this.status(player, sub === '-' ? player.index : Number(sub));
       case 'play':
         player.mode = player.queue.length ? 'play' : 'stop';
         break;
@@ -341,10 +341,10 @@ export class FakeLms {
     }
   }
 
-  status(player) {
+  status(player, start = player.index) {
     const template = structuredClone(fixture('status-playing').result);
     delete template.playlist_loop;
-    const song = player.queue[player.index];
+    const song = player.queue[start];
     const result = {
       ...template,
       player_name: player.name,
@@ -358,7 +358,7 @@ export class FakeLms {
       playlist_cur_index: String(player.index),
     };
     if (song) {
-      result.playlist_loop = [{ 'playlist index': player.index, remote: '0', ...song }];
+      result.playlist_loop = [{ 'playlist index': start, remote: '0', ...song }];
     }
     const group = this.groupOf(player.id);
     if (group) {

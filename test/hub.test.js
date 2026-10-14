@@ -338,3 +338,66 @@ test('a new language publishes the devices again with the new names', async (t) 
   await world.gladys.fake.configUpdated({ host: '192.0.2.10', language: 'de' });
   assert.equal(featureOf(world.gladys, KITCHEN, 'previous').name, 'Vorheriger Titel');
 });
+
+async function announcing(t, timings = {}) {
+  const lms = new FakeLms({ cliOpen: false });
+  lms.load(KITCHEN, SONGS, { index: 1, time: 42 });
+  const world = await ready({ lms, timings });
+  t.after(() => world.app.stop());
+  const ack = await world.gladys.fake.sceneAction('announce', {
+    device: deviceId(KITCHEN),
+    url: 'https://example.com/chime.mp3',
+  });
+  assert.equal(ack.success, true, ack.error);
+  const done = () => until(() => !world.hub.players.get(KITCHEN).announcing, 2000, 'end');
+  return { ...world, player: lms.player(KITCHEN), done };
+}
+
+test('a chime over before the first read is restored at once, not after the grace', async (t) => {
+  const { player, done } = await announcing(t, { announceStartMs: 60_000 });
+  player.index = 3; // already on the next song at the first read
+  await done();
+  assert.deepEqual([player.index, player.time, player.queue.length], [1, 42, 3]);
+});
+
+test('a pause during the announcement gives the music back paused', async (t) => {
+  const { gladys, player, done } = await announcing(t);
+  await gladys.fake.sceneAction('pause_all', {});
+  await done();
+  assert.deepEqual([player.index, player.mode, player.queue.length], [1, 'pause', 3]);
+});
+
+test('a favorite played during the announcement is left alone', async (t) => {
+  const { gladys, player, done } = await announcing(t);
+  await gladys.fake.sceneAction('play_favorite', { device: deviceId(KITCHEN), favorite: '1' });
+  await done();
+  assert.deepEqual(
+    [player.queue.length, player.queue[0].title, player.index, player.time, player.mode],
+    [1, 'Night Radio', 0, 0, 'play'],
+  );
+});
+
+test('the server lost during an announcement: the hub gives up, nothing replayed later', async (t) => {
+  const { lms, player, done } = await announcing(t);
+  lms.down = true;
+  await done();
+  lms.down = false;
+  await settle(80);
+  assert.equal(player.index, 2, 'the queue was not touched afterwards');
+});
+
+test('the server lost: players are offline in Gladys and in the widget', async (t) => {
+  const lms = new FakeLms({ cliOpen: false });
+  lms.load(KITCHEN, SONGS);
+  const world = await ready({ lms });
+  t.after(() => world.app.stop());
+  assert.equal(last(world.gladys, 'playback_state'), 1);
+  lms.down = true;
+  await until(() => last(world.gladys, 'playback_state') === 0, 2000, 'offline');
+  const widget = await world.gladys.fake.widgetGet('players', { settings: {}, language: 'en' });
+  assert.match(widget.data.content.components[0].text, /unavailable/);
+  lms.down = false;
+  await until(() => last(world.gladys, 'playback_state') === 1, 2000, 'back');
+  const started = world.gladys.fake.sceneEvents.filter((e) => e.key === 'playback_started');
+  assert.equal(started.length, 0, 'coming back is not a new playback');
+});

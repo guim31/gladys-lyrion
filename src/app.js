@@ -41,8 +41,11 @@ export function registerHandlers(gladys, options = {}) {
         await hub.resync();
         return;
       }
+      // Started only once the configuration is read: a failure here is
+      // retried at the next connection.
+      const config = normalizeConfig(await gladys.getConfig());
       started = true;
-      await hub.start(normalizeConfig(await gladys.getConfig()));
+      await hub.start(config);
     } catch (err) {
       logger.error('Initialization failed', err);
       await gladys.setConnectionStatus(false, INIT_FAILED).catch(() => {});

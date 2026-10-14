@@ -94,8 +94,8 @@ bekommt Titel, Position, Lautstärke, Status, Wiederholungsmodus und Ein/Aus zur
 
 - **Morgenradio**: werktags um 7:30 _Lyrion-Favoriten abspielen_ `FIP` auf dem Küchen-Player, dann
   _Lautstärke einstellen_ auf 25.
-- **Türklingel**: wenn es klingelt, _Durchsage abspielen_ mit der Adresse einer Gong-MP3 auf jedem
-  Player im Erdgeschoss, Lautstärke 60.
+- **Türklingel**: wenn es klingelt, _Durchsage abspielen_ mit der Adresse einer Gong-MP3 auf dem
+  Flur-Player (eine Aktion pro Player), Lautstärke 60.
 - **Haus verlassen**: wenn die letzte Person geht, _Alle Player pausieren_.
 - **Party**: _Einer Player-Gruppe beitreten_ für Wohnzimmer und Küche, und um Mitternacht _Gruppe
   verlassen_.

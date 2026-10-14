@@ -313,6 +313,13 @@ export class Hub {
     }
     this.serverError = code;
     this.#setStatus(false, code);
+    // Without the server, nothing is known of the players: offline, not
+    // "playing" for hours.
+    for (const player of this.players.values()) {
+      if (player.snapshot?.connected) {
+        this.#apply(player, { ...player.snapshot, connected: false });
+      }
+    }
   }
 
   async #setStatus(connected, code = null) {
@@ -338,7 +345,8 @@ export class Hub {
       return;
     }
     const key = trackKey(snapshot);
-    if (!previous) {
+    if (!previous || !previous.connected) {
+      // First read, or back from offline: the reference, no scene event.
       player.lastTrack = key;
     } else if (snapshot.connected) {
       const was = isPlaying(previous);
@@ -410,13 +418,13 @@ export class Hub {
         buildStates(this.gladys, player.id, player.snapshot, this.language),
         { heartbeat: HEARTBEAT_MS },
       );
-      if (this.publishFailing) {
-        this.publishFailing = false;
+      if (player.publishFailing) {
+        player.publishFailing = false;
         logger.info('States published again');
       }
     } catch (err) {
-      const log = this.publishFailing ? logger.debug : logger.warn;
-      this.publishFailing = true;
+      const log = player.publishFailing ? logger.debug : logger.warn;
+      player.publishFailing = true;
       log(`Cannot publish the states of ${player.name}: ${err.message}`);
     }
   }
@@ -522,9 +530,6 @@ export class Hub {
       throw new CommandError('bad_volume', this.language);
     }
     await this.send(player.id, ['mixer', 'volume', clampVolume(value)]);
-    if (player.snapshot) {
-      player.snapshot = { ...player.snapshot, volume: clampVolume(value) };
-    }
   }
 
   async stepVolume(player, step) {
@@ -638,109 +643,149 @@ export class Hub {
     if (player.announcing) {
       throw new CommandError('busy', this.language);
     }
-    if (volume !== null && volume !== undefined && volume !== '') {
+    const withVolume = volume !== null && volume !== undefined && volume !== '';
+    if (withVolume) {
       const value = Number(volume);
       if (!Number.isFinite(value) || value < 0 || value > 100) {
         throw new CommandError('bad_volume', this.language);
       }
     }
+    if (!this.client) {
+      throw new CommandError('not_configured', this.language);
+    }
     player.announcing = true;
     const id = player.id;
-    let saved;
-    let slot;
+    const client = this.client;
+    const job = { id, client, url: parsed.href, withVolume, saved: null, slot: 0 };
     try {
-      saved = parseStatus(await this.client.status(id));
+      job.saved = parseStatus(await client.status(id));
+      const { saved } = job;
       if (!saved.power) {
-        await this.send(id, ['power', '1']);
+        await client.request(id, ['power', '1']);
       }
       if (saved.repeat) {
         // Repeat-one would play the announcement forever.
-        await this.send(id, ['playlist', 'repeat', '0']);
+        await client.request(id, ['playlist', 'repeat', '0']);
       }
       if (saved.muted) {
-        await this.send(id, ['mixer', 'muting', '0']);
+        await client.request(id, ['mixer', 'muting', '0']);
       }
-      if (volume !== null && volume !== undefined && volume !== '') {
-        await this.send(id, ['mixer', 'volume', clampVolume(volume)]);
+      if (withVolume) {
+        await client.request(id, ['mixer', 'volume', clampVolume(volume)]);
       }
       if (saved.tracks > 0) {
-        slot = saved.index + 1;
-        await this.send(id, ['playlist', 'insert', parsed.href]);
-        await this.send(id, ['playlist', 'index', slot]);
+        job.slot = saved.index + 1;
+        await client.request(id, ['playlist', 'insert', job.url]);
+        await client.request(id, ['playlist', 'index', job.slot]);
       } else {
-        slot = 0;
-        await this.send(id, ['playlist', 'play', parsed.href]);
+        await client.request(id, ['playlist', 'play', job.url]);
       }
     } catch (err) {
+      // Give back what was already changed (power, repeat, mute, volume).
+      if (job.saved) {
+        await this.#restoreSettings(job).catch(() => {});
+      }
       player.announcing = false;
       throw err instanceof LmsError ? new CommandError(err.code, this.language) : err;
     }
     logger.info(`${player.name}: announcement`);
-    this.#follow(player, saved, slot, volume).catch((err) => {
+    this.#follow(player, job).catch((err) => {
       logger.warn(`${player.name}: cannot restore after the announcement: ${err.message}`);
     });
   }
 
-  async #follow(player, saved, slot, volume) {
-    const id = player.id;
+  /**
+   * Waits for the end of the announcement, then restores. The end is the
+   * first read off the announcement slot or not playing it any more: a short
+   * chime is often over before the first read. A pause on the announcement is
+   * a user's pause (pause all, a button): the music comes back paused. When the
+   * queue is not ours any more (a favorite was played meanwhile), only the
+   * volume, mute and repeat are given back. Without the server, nothing is
+   * replayed hours later: after 10 failed reads, or a new configuration, the
+   * hub gives up.
+   */
+  async #follow(player, job) {
+    const { id, client, saved, slot } = job;
+    const generation = this.generation;
+    const alive = () => !this.stopped && this.generation === generation && this.client === client;
     const started = this.now();
-    let heard = false;
+    let failures = 0;
+    let pausedByUser = false;
+    let gaveUp = false;
     try {
-      // Wait for the stream to start, then for it to end.
-      while (!this.stopped) {
+      while (alive()) {
         await sleep(this.timings.announceCheckMs);
-        let current;
-        try {
-          current = parseStatus(await this.client.status(id));
-        } catch {
-          continue;
-        }
-        const onSlot = current.index === slot && current.mode === 'play';
         const elapsed = this.now() - started;
-        if (onSlot) {
-          heard = true;
-        } else if (heard || elapsed > this.timings.announceStartMs || current.mode === 'stop') {
-          break;
-        }
         if (elapsed > this.timings.announceMaxMs) {
           break;
         }
+        let current;
+        try {
+          current = parseStatus(await client.status(id));
+          failures = 0;
+        } catch {
+          failures += 1;
+          if (failures >= 10) {
+            gaveUp = true;
+            break;
+          }
+          continue;
+        }
+        if (current.index !== slot || current.mode === 'stop') {
+          break;
+        }
+        if (current.mode === 'pause') {
+          pausedByUser = true;
+          break;
+        }
+        // Still on the slot, playing: wait for the end.
       }
-      if (this.stopped || !this.client) {
+      if (!alive() || gaveUp) {
         return;
       }
+      let ours = saved.tracks === 0;
       if (saved.tracks > 0) {
-        await this.client.request(id, ['playlist', 'delete', slot]);
-        await this.client.request(id, ['playlist', 'index', saved.index]);
-        if (saved.time > 1) {
-          await this.client.request(id, ['time', saved.time.toFixed(1)]);
+        const check = await client.request(id, ['status', slot, 1, 'tags:u']);
+        ours =
+          Number(check.playlist_tracks) === saved.tracks + 1 &&
+          check.playlist_loop?.[0]?.url === job.url;
+      }
+      if (ours && saved.tracks > 0) {
+        await client.request(id, ['playlist', 'delete', slot]);
+        await client.request(id, ['playlist', 'index', saved.index]);
+        if (saved.mode !== 'stop' && !saved.remote && saved.time > 1) {
+          await client.request(id, ['time', saved.time.toFixed(1)]);
         }
-        if (saved.mode === 'pause') {
-          await this.client.request(id, ['pause', '1']);
-        } else if (saved.mode === 'stop') {
-          await this.client.request(id, ['stop']);
+        if (saved.mode === 'stop') {
+          await client.request(id, ['stop']);
+        } else if (saved.mode === 'pause' || pausedByUser) {
+          await client.request(id, ['pause', '1']);
         }
-      } else {
-        await this.client.request(id, ['playlist', 'clear']);
+      } else if (ours) {
+        await client.request(id, ['playlist', 'clear']);
       }
-      if (volume !== null && volume !== undefined && volume !== '' && saved.volume !== null) {
-        await this.client.request(id, ['mixer', 'volume', saved.volume]);
-      }
-      if (saved.muted) {
-        await this.client.request(id, ['mixer', 'muting', '1']);
-      }
-      if (saved.repeat) {
-        await this.client.request(id, ['playlist', 'repeat', saved.repeat]);
-      }
-      if (!saved.power) {
-        await this.client.request(id, ['power', '0']);
-      }
+      await this.#restoreSettings(job, { power: ours });
     } finally {
       // The next read is the reference again, without scene events for what
       // the announcement did.
       player.snapshot = null;
       player.announcing = false;
       this.soon();
+    }
+  }
+
+  async #restoreSettings({ id, client, saved, withVolume }, { power = true } = {}) {
+    if (withVolume && saved.volume !== null) {
+      await client.request(id, ['mixer', 'volume', saved.volume]);
+    }
+    if (saved.muted) {
+      await client.request(id, ['mixer', 'muting', '1']);
+    }
+    if (saved.repeat) {
+      await client.request(id, ['playlist', 'repeat', saved.repeat]);
+    }
+    if (power && !saved.power) {
+      await client.request(id, ['power', '0']);
     }
   }
 
@@ -778,6 +823,14 @@ export class Hub {
     if (!path || !this.client) {
       throw new Error(`Unknown image ${key}`);
     }
-    return (await this.client.image(path)).toString('base64');
+    const bytes = await this.client.image(path);
+    // The core takes PNG, JPEG or WebP only (a radio logo may be a GIF or SVG).
+    const png = bytes.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+    const jpeg = bytes[0] === 0xff && bytes[1] === 0xd8;
+    const webp = bytes.subarray(8, 12).toString('latin1') === 'WEBP';
+    if (!png && !jpeg && !webp) {
+      throw new Error(`Image ${key} is not a PNG, JPEG or WebP`);
+    }
+    return bytes.toString('base64');
   }
 }

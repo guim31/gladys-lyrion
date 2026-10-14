@@ -103,7 +103,11 @@ function songLine(snapshot, lang) {
 }
 
 function listContent(hub, lang) {
+  // A card list holds 8 rows: beyond, pick a player in the widget settings.
   const players = [...hub.players.values()].slice(0, 8);
+  if (hub.serverError) {
+    return textOnly(pick(TEXT.unavailable, lang));
+  }
   if (players.length === 0) {
     return textOnly(
       pick(hub.client && hub.serverError === null ? TEXT.empty : TEXT.unavailable, lang),
@@ -123,10 +127,10 @@ function listContent(hub, lang) {
       }),
     },
   ];
-  if (players.some((player) => isPlaying(player.snapshot))) {
+  const playing = players.some((player) => isPlaying(player.snapshot));
+  if (playing) {
     components.push(button(lang, 'pause_all', 'pause-circle'));
   }
-  const playing = players.some((player) => isPlaying(player.snapshot));
   return { ttl_seconds: playing ? 30 : 120, components };
 }
 
