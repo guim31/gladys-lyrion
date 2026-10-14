@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-14
+
 ### Added
 
 - One Gladys device per player of a Lyrion Music Server (Squeezebox,
@@ -29,4 +31,5 @@ the notes of the version's GitHub Release.
 - HTTP basic authentication of Lyrion's password protection.
 - English, French, German and Spanish texts and documentation.
 
-[Unreleased]: https://github.com/guim31/gladys-lyrion/commits/main
+[Unreleased]: https://github.com/guim31/gladys-lyrion/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/guim31/gladys-lyrion/releases/tag/v1.0.0
