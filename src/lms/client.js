@@ -37,30 +37,51 @@ export class LmsClient {
     }
   }
 
-  async #get(path, init = {}) {
-    let response;
+  /**
+   * One HTTP exchange, the body read included, under the timeout. A ref'd
+   * timer rather than AbortSignal.timeout(): Node 22 would not wait for an
+   * unref'd one when nothing else keeps the process busy.
+   */
+  async #get(path, init, read) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
-      response = await this.fetch(`${this.baseUrl}${path}`, {
-        ...init,
-        headers: this.headers,
-        signal: AbortSignal.timeout(this.timeoutMs),
-      });
-    } catch (err) {
-      if (err?.name === 'TimeoutError' || err?.name === 'AbortError') {
-        throw new LmsError('timeout', 'Lyrion did not answer in time');
+      let response;
+      try {
+        response = await this.fetch(`${this.baseUrl}${path}`, {
+          ...init,
+          headers: this.headers,
+          signal: controller.signal,
+        });
+      } catch (err) {
+        if (controller.signal.aborted) {
+          throw new LmsError('timeout', 'Lyrion did not answer in time');
+        }
+        throw new LmsError(
+          'unreachable',
+          `Lyrion is unreachable (${err?.cause?.code ?? err?.message})`,
+        );
       }
-      throw new LmsError(
-        'unreachable',
-        `Lyrion is unreachable (${err?.cause?.code ?? err?.message})`,
-      );
+      if (response.status === 401 || response.status === 403) {
+        throw new LmsError('auth', `Lyrion refused the credentials (HTTP ${response.status})`);
+      }
+      if (!response.ok) {
+        throw new LmsError('protocol', `Lyrion answered HTTP ${response.status}`);
+      }
+      try {
+        return await read(response);
+      } catch (err) {
+        if (err instanceof LmsError) {
+          throw err;
+        }
+        if (controller.signal.aborted) {
+          throw new LmsError('timeout', 'Lyrion did not answer in time');
+        }
+        throw new LmsError('protocol', 'Lyrion answered something that is not JSON');
+      }
+    } finally {
+      clearTimeout(timer);
     }
-    if (response.status === 401 || response.status === 403) {
-      throw new LmsError('auth', `Lyrion refused the credentials (HTTP ${response.status})`);
-    }
-    if (!response.ok) {
-      throw new LmsError('protocol', `Lyrion answered HTTP ${response.status}`);
-    }
-    return response;
   }
 
   /**
@@ -70,20 +91,18 @@ export class LmsClient {
    * @returns {Promise<object>} the `result` object (empty for most commands)
    */
   async request(playerId, command) {
-    const response = await this.#get('/jsonrpc.js', {
-      method: 'POST',
-      body: JSON.stringify({
-        id: 1,
-        method: 'slim.request',
-        params: [playerId, command.map(String)],
-      }),
-    });
-    let body;
-    try {
-      body = await response.json();
-    } catch {
-      throw new LmsError('protocol', 'Lyrion answered something that is not JSON');
-    }
+    const body = await this.#get(
+      '/jsonrpc.js',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          id: 1,
+          method: 'slim.request',
+          params: [playerId, command.map(String)],
+        }),
+      },
+      (response) => response.json(),
+    );
     if (!body || typeof body !== 'object') {
       throw new LmsError('protocol', 'Lyrion answered an empty body');
     }
@@ -117,11 +136,12 @@ export class LmsClient {
 
   /** The bytes of an image served by LMS (cover art), size-capped. */
   async image(path) {
-    const response = await this.#get(path);
-    const bytes = Buffer.from(await response.arrayBuffer());
-    if (bytes.length > MAX_IMAGE_BYTES) {
-      throw new LmsError('protocol', `Image too large (${bytes.length} bytes)`);
-    }
-    return bytes;
+    return this.#get(path, {}, async (response) => {
+      const bytes = Buffer.from(await response.arrayBuffer());
+      if (bytes.length > MAX_IMAGE_BYTES) {
+        throw new LmsError('protocol', `Image too large (${bytes.length} bytes)`);
+      }
+      return bytes;
+    });
   }
 }
