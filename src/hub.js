@@ -5,15 +5,33 @@
 // Reading: JSON-RPC (`serverstatus`, then `status` per connected player) on a
 // timer of the container (Gladys#3198), fast while the CLI is closed, slow
 // while it is open; every CLI event schedules an early read. Only the changes
-// reach Gladys (publishChangedStates), with a heartbeat.
+// reach Gladys: the music features through publishNowPlaying (diffed by the
+// SDK, the position only on a change of state or song, or a seek), the power
+// through publishChangedStates, with a heartbeat.
 // -----------------------------------------------------------------------------
 
 import { createHash } from 'node:crypto';
 import { createLogger } from '@gladysassistant/integration-sdk';
-import { buildDevice, buildStates, deviceIds, featureKeyOf } from './devices.js';
+import { DEVICE_FEATURE_CATEGORIES, MUSIC_PLAYBACK_STATE } from '@gladysassistant/integration-sdk';
+import {
+  ARTWORK_SIZE,
+  REPEAT_TO_LMS,
+  buildDevice,
+  buildStates,
+  deviceIds,
+  featureKeyOf,
+  nowPlaying,
+} from './devices.js';
 import { LmsClient, LmsError } from './lms/client.js';
 import { CliListener, RECONNECT_MIN_MS, SETTLE_MS } from './lms/listener.js';
-import { isPlaying, parseFavorites, parseServer, parseStatus, trackKey } from './lms/model.js';
+import {
+  artworkPath,
+  isPlaying,
+  parseFavorites,
+  parseServer,
+  parseStatus,
+  trackKey,
+} from './lms/model.js';
 import { STATUS_TEXT, commandMessage } from './texts.js';
 
 const logger = createLogger({ name: 'lyrion-hub' });
@@ -414,10 +432,13 @@ export class Hub {
       return;
     }
     try {
-      await this.gladys.publishChangedStates(
-        buildStates(this.gladys, player.id, player.snapshot, this.language),
-        { heartbeat: HEARTBEAT_MS },
+      await this.gladys.publishNowPlaying(
+        deviceIds(this.gladys, player.id).device,
+        nowPlaying(player.snapshot, this.config.baseUrl),
       );
+      await this.gladys.publishChangedStates(buildStates(this.gladys, player.id, player.snapshot), {
+        heartbeat: HEARTBEAT_MS,
+      });
       if (player.publishFailing) {
         player.publishFailing = false;
         logger.info('States published again');
@@ -446,7 +467,11 @@ export class Hub {
     }
   }
 
-  /** A device was added in Gladys: its states, now that its features exist. */
+  /**
+   * A device was added, or updated from the Discover tab, in Gladys: its
+   * states, now that its features exist (the SDK forgot what it had
+   * published for it, everything is sent again).
+   */
   async onDeviceCreated(device) {
     const player = this.#find(device?.external_id);
     if (player) {
@@ -484,8 +509,18 @@ export class Hub {
     return null;
   }
 
-  /** The player of a device external id, or a CommandError. */
-  playerOf(externalId) {
+  /** A CommandError in the language of the configuration. */
+  error(code) {
+    return new CommandError(code, this.language);
+  }
+
+  /**
+   * The player of a device external id, or a CommandError.
+   * @param {string} externalId
+   * @param {{ connected?: boolean }} [options] connected: false for what does
+   *   not need the player itself (browsing the library of the server)
+   */
+  playerOf(externalId, { connected = true } = {}) {
     if (!this.client) {
       throw new CommandError('not_configured', this.language);
     }
@@ -493,27 +528,39 @@ export class Hub {
     if (!player) {
       throw new CommandError('unknown_player', this.language);
     }
-    if (!player.connected) {
+    if (connected && !player.connected) {
       throw new CommandError('offline', this.language);
     }
     return player;
   }
 
-  /** One command to LMS, errors turned into coded messages. */
+  /** One command to LMS, errors turned into coded messages; then an early read. */
   async send(playerId, command) {
+    const result = await this.query(playerId, command);
+    this.soon();
+    return result;
+  }
+
+  /** One request to LMS that changes nothing (the catalog), errors coded. */
+  async query(playerId, command) {
     if (!this.client) {
       throw new CommandError('not_configured', this.language);
     }
     try {
-      const result = await this.client.request(playerId, command);
-      this.soon();
-      return result;
+      return await this.client.request(playerId, command);
     } catch (err) {
       if (err instanceof LmsError) {
         throw new CommandError(err.code, this.language);
       }
       throw err;
     }
+  }
+
+  /** Play, or resume a paused song. */
+  resume(player) {
+    return player.snapshot?.mode === 'pause'
+      ? this.send(player.id, ['pause', '0'])
+      : this.send(player.id, ['play']);
   }
 
   async playPause(player) {
@@ -545,9 +592,20 @@ export class Hub {
       case 'power':
         return this.send(player.id, ['power', Number(value) ? '1' : '0']);
       case 'play':
-        return player.snapshot?.mode === 'pause'
-          ? this.send(player.id, ['pause', '0'])
-          : this.send(player.id, ['play']);
+        return this.resume(player);
+      case 'playback_state':
+        return this.setPlaybackState(player, value);
+      case 'position':
+        return this.seek(player, value);
+      case 'shuffle':
+        return this.send(player.id, ['playlist', 'shuffle', Number(value) ? '1' : '0']);
+      case 'repeat': {
+        const repeat = REPEAT_TO_LMS[Number(value)];
+        if (repeat === undefined) {
+          throw new Error(`Invalid repeat mode ${value}`);
+        }
+        return this.send(player.id, ['playlist', 'repeat', repeat]);
+      }
       case 'pause':
         return this.send(player.id, ['pause', '1']);
       case 'stop':
@@ -559,12 +617,40 @@ export class Hub {
       case 'volume':
         return this.setVolume(player, value);
       case 'mute':
-        return this.send(player.id, ['mixer', 'muting', 'toggle']);
+        // music/mute since 1.1.0 takes a value; a device not updated yet still
+        // has the television push button of 1.0 (always 1): it toggles.
+        if (feature?.category === DEVICE_FEATURE_CATEGORIES.TELEVISION) {
+          return this.send(player.id, ['mixer', 'muting', 'toggle']);
+        }
+        return this.send(player.id, ['mixer', 'muting', Number(value) ? '1' : '0']);
       case 'notification':
         return this.announce(player, value);
       default:
         throw new Error(`Unknown feature ${key}`);
     }
+  }
+
+  /** playback_state written by Gladys 5.3: 0 pause, 1 play, 2 stop. */
+  setPlaybackState(player, value) {
+    switch (Number(value)) {
+      case MUSIC_PLAYBACK_STATE.PLAYING:
+        return this.resume(player);
+      case MUSIC_PLAYBACK_STATE.PAUSED:
+        return this.send(player.id, ['pause', '1']);
+      case MUSIC_PLAYBACK_STATE.IDLE:
+        return this.send(player.id, ['stop']);
+      default:
+        throw new Error(`Invalid playback state ${value}`);
+    }
+  }
+
+  /** position written by Gladys 5.3: a seek, in seconds. */
+  seek(player, value) {
+    const position = Number(value);
+    if (!Number.isFinite(position) || position < 0) {
+      throw new Error(`Invalid position ${value}`);
+    }
+    return this.send(player.id, ['time', Math.round(position)]);
   }
 
   /** Plays a favorite found by name (case and accents ignored) or 1-based position. */
@@ -797,15 +883,8 @@ export class Hub {
     if (!snapshot || snapshot.tracks === 0) {
       return null;
     }
-    let path = null;
-    if (snapshot.coverId) {
-      path = `/music/${encodeURIComponent(snapshot.coverId)}/cover_300x300_o.jpg`;
-    } else if (/^https?:\/\//i.test(snapshot.artworkUrl)) {
-      // LMS fetches and resizes remote art itself: the browser never does.
-      path = `/imageproxy/${encodeURIComponent(snapshot.artworkUrl)}/image_300x300_o`;
-    } else if (snapshot.artworkUrl) {
-      path = `/${snapshot.artworkUrl.replace(/^\/+/, '')}`;
-    }
+    // LMS fetches and resizes remote art itself: the browser never does.
+    const path = artworkPath(snapshot, ARTWORK_SIZE);
     if (!path) {
       return null;
     }
@@ -823,6 +902,25 @@ export class Hub {
     if (!path || !this.client) {
       throw new Error(`Unknown image ${key}`);
     }
+    return this.#imageBase64(path, key);
+  }
+
+  /**
+   * onMusicGetArtwork (Gladys 5.3): the raw base64 of an artwork key. Its URL
+   * was recorded by artworkKey (publishNowPlaying, the catalog); it is read
+   * by the LMS client, with the credentials and under 300 KB, never by the
+   * default handler of the SDK (no credentials, no size limit).
+   */
+  async artwork(key) {
+    const url = this.gladys.artworkUrls?.get(key);
+    const base = this.config?.baseUrl;
+    if (!url || !this.client || !base || !url.startsWith(`${base}/`)) {
+      throw new Error(`Unknown artwork ${key}`);
+    }
+    return this.#imageBase64(url.slice(base.length), key);
+  }
+
+  async #imageBase64(path, key) {
     const bytes = await this.client.image(path);
     // The core takes PNG, JPEG or WebP only (a radio logo may be a GIF or SVG).
     const png = bytes.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]));

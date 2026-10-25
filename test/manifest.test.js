@@ -49,8 +49,12 @@ test('the manifest version is the package version, and the image is tagged with 
   assert.ok(manifest.docker_image.endsWith(`:${manifest.version}`), manifest.docker_image);
 });
 
-test('scene triggers, scene actions and widgets: Gladys >= 5.1.0 (no widget form)', () => {
-  assert.equal(manifest.gladys_version, '>=5.1.0');
+test('the music player of Gladys 5.3: the manifest declares what src/catalog.js answers', () => {
+  // The `music` field needs Gladys 5.3.0 (SDK 0.16), above the 5.1.0 of the
+  // widgets, scene triggers and scene actions.
+  assert.equal(manifest.gladys_version, '>=5.3.0');
+  assert.deepEqual(manifest.music, { browse: true, search: true, queue: true, append: true });
+  assert.match(pkg.dependencies['@gladysassistant/integration-sdk'], /^\^0\.16\./);
 });
 
 test('config_schema: the defaults and options of the code', () => {

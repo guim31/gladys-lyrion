@@ -1,0 +1,72 @@
+{
+  "params": ["02:00:00:00:00:02", ["status", "0", "50", "tags:acdjKlNu"]],
+  "result": {
+    "player_name": "Salon2",
+    "player_connected": 1,
+    "player_ip": "192.0.2.4:56152",
+    "power": 1,
+    "signalstrength": 0,
+    "mode": "play",
+    "time": 0.830905220031738,
+    "rate": 1,
+    "duration": 40,
+    "can_seek": 1,
+    "mixer volume": 50,
+    "playlist repeat": 0,
+    "playlist shuffle": 0,
+    "playlist mode": "off",
+    "seq_no": 0,
+    "playlist_cur_index": "1",
+    "playlist_timestamp": 1792953722.26436,
+    "playlist_tracks": 4,
+    "randomplay": 0,
+    "digital_volume_control": 1,
+    "use_volume_control": 1,
+    "playlist_loop": [
+      {
+        "artist": "Aurora Lane",
+        "url": "file:///music/Aurora%20Lane/First%20Light/01.flac",
+        "coverid": "3a3bf033",
+        "title": "Morning Glow",
+        "album": "First Light",
+        "playlist index": 0,
+        "id": 1,
+        "coverart": "1",
+        "duration": 40
+      },
+      {
+        "coverid": "3a3bf033",
+        "title": "Blue Hour",
+        "artist": "Aurora Lane",
+        "url": "file:///music/Aurora%20Lane/First%20Light/02.flac",
+        "id": 2,
+        "duration": 40,
+        "coverart": "1",
+        "album": "First Light",
+        "playlist index": 1
+      },
+      {
+        "playlist index": 2,
+        "album": "First Light",
+        "coverart": "1",
+        "duration": 40,
+        "id": 3,
+        "url": "file:///music/Aurora%20Lane/First%20Light/03.flac",
+        "artist": "Aurora Lane",
+        "title": "Long Shadows",
+        "coverid": "3a3bf033"
+      },
+      {
+        "playlist index": 3,
+        "artwork_url": "html/images/radio.png",
+        "duration": "0",
+        "coverart": "0",
+        "id": "-108210278735440",
+        "url": "http://radio.example.com/fip-midfi.mp3",
+        "remote_title": "FIP",
+        "title": "FIP",
+        "coverid": "-108210278735440"
+      }
+    ]
+  }
+}
