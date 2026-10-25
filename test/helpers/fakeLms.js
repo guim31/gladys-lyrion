@@ -107,7 +107,7 @@ class FakeSocket extends EventEmitter {
 }
 
 export class FakeLms {
-  constructor({ username = '', password = '', cliOpen = true, favorites } = {}) {
+  constructor({ username = '', password = '', cliOpen = true, favorites, library } = {}) {
     this.username = username;
     this.password = password;
     this.cliOpen = cliOpen;
@@ -115,6 +115,8 @@ export class FakeLms {
     this.sockets = new Set();
     this.requests = [];
     this.favorites = favorites ?? fixture('favorites').result.loop_loop;
+    // Library answers recorded on a real LMS, by command (src/catalog.js).
+    this.library = library ?? fixture('library');
     this.players = new Map();
     this.addPlayer(KITCHEN, 'Kitchen');
     this.addPlayer(SALON, 'Salon');
@@ -135,6 +137,7 @@ export class FakeLms {
       index: 0,
       time: 0,
       repeat: 0,
+      shuffle: 0,
       master: null,
       ...extra,
     });
@@ -217,6 +220,10 @@ export class FakeLms {
 
   handle(playerId, [name, ...args]) {
     if (playerId === '') {
+      const recorded = this.library[[name, ...args].join(' ')];
+      if (recorded !== undefined) {
+        return structuredClone(recorded);
+      }
       if (name === 'serverstatus') {
         const template = fixture('serverstatus').result;
         const players = [...this.players.values()].map((p, index) => ({
@@ -242,7 +249,15 @@ export class FakeLms {
     const sub = args[0];
     switch (name) {
       case 'status':
-        return this.status(player, sub === '-' ? player.index : Number(sub));
+        return this.status(player, sub === '-' ? player.index : Number(sub), Number(args[1] ?? 1));
+      case 'playlistcontrol': {
+        // `cmd:load|insert|add <kind>_id:<id>`: one song per id, none for 9999.
+        const cmd = args[0].slice(4);
+        const id = Number(args[1].split(':')[1]);
+        const songs = id === 9999 ? [] : [{ id, title: `Loaded ${args[1]}`, url: `file:///${id}` }];
+        this.enqueue(player, cmd === 'load' ? 'play' : cmd, songs);
+        return { count: songs.length };
+      }
       case 'play':
         player.mode = player.queue.length ? 'play' : 'stop';
         break;
@@ -324,9 +339,18 @@ export class FakeLms {
         }
         break;
       case 'play':
-        player.queue = [{ id: 100, title: 'announce', url: value, remote: '1' }];
+        // An URL LMS does not know (`Nope`) leaves an empty queue.
+        player.queue = value.includes('Nope')
+          ? []
+          : [{ id: 100, title: 'announce', url: value, remote: '1' }];
         player.index = 0;
-        player.mode = 'play';
+        player.mode = player.queue.length ? 'play' : 'stop';
+        break;
+      case 'add':
+        player.queue.push({ id: 101, title: 'added', url: value });
+        break;
+      case 'shuffle':
+        player.shuffle = Number(value);
         break;
       case 'clear':
         player.queue = [];
@@ -341,7 +365,17 @@ export class FakeLms {
     }
   }
 
-  status(player, start = player.index) {
+  enqueue(player, how, songs) {
+    if (how === 'play') {
+      Object.assign(player, { queue: songs, index: 0, mode: songs.length ? 'play' : 'stop' });
+    } else if (how === 'insert') {
+      player.queue.splice(player.index + 1, 0, ...songs);
+    } else {
+      player.queue.push(...songs);
+    }
+  }
+
+  status(player, start = player.index, count = 1) {
     const template = structuredClone(fixture('status-playing').result);
     delete template.playlist_loop;
     const song = player.queue[start];
@@ -354,11 +388,14 @@ export class FakeLms {
       time: player.time,
       'mixer volume': player.muted ? -player.volume : player.volume,
       'playlist repeat': player.repeat,
+      'playlist shuffle': player.shuffle,
       playlist_tracks: player.queue.length,
       playlist_cur_index: String(player.index),
     };
     if (song) {
-      result.playlist_loop = [{ 'playlist index': start, remote: '0', ...song }];
+      result.playlist_loop = player.queue
+        .slice(start, start + Math.max(1, count))
+        .map((item, i) => ({ 'playlist index': start + i, remote: '0', ...item }));
     }
     const group = this.groupOf(player.id);
     if (group) {

@@ -10,6 +10,37 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Added
+
+- The music player of Gladys 5.3: the **Music** box of the dashboard shows
+  the cover, the title, the artist, the album and a progress bar you can drag
+  to seek, with shuffle, repeat and mute. New features on each player:
+  album, artwork, duration, position (writable: seek), shuffle and repeat
+  (off, all, one).
+- The panels of the Music box: the player's **queue** (tap an item to play
+  it), **search** in the Lyrion library (artists, albums, songs, playlists)
+  and in the names of the favorites, and **browsing** of the favorites (their
+  folders included), playlists, artists and albums; an item plays in place of
+  the queue, after the current song, or at the end of the queue. The core
+  scene action "Play music on a speaker" uses the same catalog, and keeps an
+  item by its Lyrion address (it survives a full rescan of the library).
+- Covers resized by Lyrion itself (300 px for the player, 64 px in the
+  lists), read with the server credentials.
+
+### Changed
+
+- Requires Gladys 5.3.0 or later (SDK 0.16).
+- The playback state is writable (play, pause, stop) and reads 2 (stopped)
+  instead of 0 when the player is stopped or off.
+- Title and artist are music texts (`music/title`, `music/artist`, same
+  external ids), empty when nothing is loaded instead of a dash; a radio
+  without song information shows the station name instead of the name of
+  its stream file.
+- Mute is a music mute (`music/mute`, same external id) that takes a value
+  (1 mutes, 0 unmutes) instead of toggling on each press.
+- Devices added with 1.0.x get the new features after **Update** in the
+  Discover tab of the integration; until then they work as before.
+
 ## [1.0.1] - 2026-10-22
 
 ### Security

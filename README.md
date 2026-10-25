@@ -9,14 +9,22 @@ account.
 > **Tested against a real Lyrion Music Server 9.1, not with a physical Squeezebox: feedback
 > welcome.** The server ran in Docker (`lmscommunity/lyrionmusicserver`) with two squeezelite
 > players: playback, pause, next, volume, mute, power, favorites, sync groups, announcements and
-> their restoration, the CLI events and HTTP basic authentication were exercised for real. Please
+> their restoration, the CLI events and HTTP basic authentication were exercised for real, and so
+> were the Gladys 5.3 music player (now playing, seek, shuffle, repeat, covers) and its catalog
+> (browse, search, play, queue). Please
 > report what works and what does not in the [issues](https://github.com/guim31/gladys-lyrion/issues).
 
 ## Features
 
 - **One device per player**, keyed on its Lyrion player id (its MAC address): power, playback state,
-  play / pause / stop / previous / next, volume, mute, title and artist. The playback features belong
-  to the Gladys **Music** category, so the core Music dashboard box drives them.
+  play / pause / stop / previous / next, volume, mute, title, artist, album, artwork, duration,
+  position, shuffle and repeat. The playback features belong to the Gladys **Music** category, so the
+  core Music dashboard box shows and drives them.
+- **Gladys 5.3 Music player**: the core Music box shows the cover, the song, a progress bar you drag
+  to seek, shuffle, repeat and mute, and opens the player's **queue** (tap to jump), a **search** of
+  the Lyrion library and favorites, and **browsing** of Favorites, Playlists, Artists and Albums; an
+  item plays in place of the queue, after the current song or at the end. The core "Play music on a
+  speaker" scene action uses the same catalog.
 - **Announcements**: the core "Talk on a speaker" scene action works on every player, and so does the
   integration's own "Play an announcement" action: the audio is inserted after the current song,
   played, then removed, and the player gets back its song, position, volume, state, repeat mode and
@@ -34,7 +42,7 @@ account.
 
 ## Requirements
 
-- Gladys Assistant **5.1** or later.
+- Gladys Assistant **5.3** or later (version 1.0 works with Gladys 5.1).
 - A Lyrion Music Server reachable from Gladys: web port 9000, CLI port 9090 (both default).
   Logitech Media Server 8 has the same API and should work too.
 
@@ -56,19 +64,36 @@ The user documentation is in [docs/en.md](docs/en.md) (also in [French](docs/fr.
   Gladys, with a heartbeat every 6 hours.
 - The CLI connection only says "something changed": every event schedules a JSON-RPC read, which
   stays the single source of truth.
-- Covers are fetched from the server (`/music/<coverid>/cover_300x300_o.jpg`, or its image proxy for
-  a remote artwork) and served to the widget by the integration: the browser never loads a
+- The music features go through the SDK's `publishNowPlaying` (diffed, the position only on a change
+  of state or song, or a seek); the power through `publishChangedStates`.
+- Covers are fetched from the server, which resizes them itself (`/music/<coverid>/cover_300x300_o`,
+  `_64x64_o` for list thumbnails, or its image proxy for a remote artwork), with the credentials and
+  under the 300 KB Gladys accepts, and served by the integration: the browser never loads a
   third-party URL.
+- The catalog is read on demand: `favorites items`, `playlists`, `artists`, `albums`, `titles`,
+  `playlists tracks`, each paged by LMS; the queue is `status <offset> <limit>`. An item plays by its
+  LMS URL (`playlist play|insert|add`, `db:album.title=…` for an album or an artist), which survives
+  a library rescan.
+
+### Gladys 5.3: updating an existing device
+
+A player added with version 1.0.x keeps working as before. To get the new features, open the
+**Discover** tab of the integration and click **Update** on the player: the new features are added
+and the existing ones keep their scenes and dashboards. Title, artist and mute keep their external
+ids but become `music/title`, `music/artist` and `music/mute`; the playback state reads 2 (stopped)
+instead of 0 when the player is stopped or off.
 
 ## Limitations
 
 - One server per integration, typed by hand: Lyrion's own discovery is a UDP broadcast, which the
   Gladys sandbox does not carry.
-- The music features have no row in the "devices in a room" box of Gladys (only the Music box and the
-  widget show them).
+- The one-shot music buttons (play, pause, next…) have no row in the "devices in a room" box of
+  Gladys; Gladys 5.3 shows the playback state, volume, mute, shuffle, repeat and texts there.
 - An announcement on a synced player plays on the whole group; with shuffle on, the position given
   back may differ. An endless stream is cut after 10 minutes.
-- Only the top level of the favorites can be played by an action.
+- Only the top level of the favorites can be played by the integration's "Play a Lyrion favorite"
+  action (the Music box panel opens their folders). Lyrion apps (online radios, streaming services)
+  are not browsable from Gladys: add their items to the favorites.
 
 ## Development
 

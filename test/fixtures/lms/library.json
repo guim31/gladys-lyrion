@@ -1,0 +1,427 @@
+{
+  "_comment": "Answers of a real Lyrion Music Server 9.1.1 (lmscommunity/lyrionmusicserver) to the commands of src/catalog.js, keyed by command; generated library (sine tones), radio URL anonymized.",
+  "favorites items 0 50 want_url:1": {
+    "title": "Favorites",
+    "loop_loop": [
+      {
+        "id": "8119eca7.0",
+        "name": "FIP",
+        "type": "audio",
+        "image": "html/images/radio.png",
+        "url": "http://radio.example.com/fip-midfi.mp3",
+        "isaudio": 1,
+        "hasitems": 0
+      },
+      {
+        "id": "8119eca7.1",
+        "name": "Loop Two",
+        "type": "audio",
+        "image": "html/images/cover.png",
+        "url": "file:///music/Quiet%20Machines/Loops/02.flac",
+        "isaudio": 1,
+        "hasitems": 0
+      },
+      {
+        "id": "8119eca7.2",
+        "name": "First Light",
+        "type": "audio",
+        "image": "music/3a3bf033/cover.png",
+        "url": "db:album.title=First%20Light&contributor.name=Aurora%20Lane",
+        "isaudio": 1,
+        "hasitems": 0
+      },
+      {
+        "id": "8119eca7.3",
+        "name": "Ambiance",
+        "image": "html/images/favorites.png",
+        "isaudio": 0,
+        "hasitems": 1
+      }
+    ],
+    "count": 4
+  },
+  "favorites items 0 50 want_url:1 item_id:3": {
+    "title": "Ambiance",
+    "loop_loop": [
+      {
+        "id": "3.0",
+        "name": "Neon Rain",
+        "type": "audio",
+        "image": "music/4/cover.png",
+        "url": "file:///music/Aurora%20Lane/Night%20Shift/01.flac",
+        "isaudio": 1,
+        "hasitems": 0
+      }
+    ],
+    "count": 1
+  },
+  "favorites items 0 200 want_url:1": {
+    "title": "Favorites",
+    "loop_loop": [
+      {
+        "id": "6409d8d0.0",
+        "name": "FIP",
+        "type": "audio",
+        "image": "html/images/radio.png",
+        "url": "http://radio.example.com/fip-midfi.mp3",
+        "isaudio": 1,
+        "hasitems": 0
+      },
+      {
+        "id": "6409d8d0.1",
+        "name": "Loop Two",
+        "type": "audio",
+        "image": "html/images/cover.png",
+        "url": "file:///music/Quiet%20Machines/Loops/02.flac",
+        "isaudio": 1,
+        "hasitems": 0
+      },
+      {
+        "id": "6409d8d0.2",
+        "name": "First Light",
+        "type": "audio",
+        "image": "music/3a3bf033/cover.png",
+        "url": "db:album.title=First%20Light&contributor.name=Aurora%20Lane",
+        "isaudio": 1,
+        "hasitems": 0
+      },
+      {
+        "id": "6409d8d0.3",
+        "name": "Ambiance",
+        "image": "html/images/favorites.png",
+        "isaudio": 0,
+        "hasitems": 1
+      }
+    ],
+    "count": 4
+  },
+  "playlists 0 50 tags:u": {
+    "playlists_loop": [
+      {
+        "id": 10,
+        "playlist": "Ma sélection",
+        "url": "file:///playlist/Ma%20s%C3%A9lection.m3u",
+        "favorites_url": "file:///playlist/Ma%20s%C3%A9lection.m3u"
+      },
+      {
+        "id": 11,
+        "playlist": "Radios",
+        "url": "file:///playlist/Radios.m3u",
+        "favorites_url": "file:///playlist/Radios.m3u"
+      }
+    ],
+    "count": 2
+  },
+  "artists 0 50": {
+    "artists_loop": [
+      {
+        "id": 2,
+        "artist": "Aurora Lane",
+        "favorites_url": "db:contributor.name=Aurora%20Lane"
+      },
+      {
+        "id": 3,
+        "artist": "Les Pétales",
+        "favorites_url": "db:contributor.name=Les%20P%C3%A9tales"
+      },
+      {
+        "id": 4,
+        "artist": "Quiet Machines",
+        "favorites_url": "db:contributor.name=Quiet%20Machines"
+      }
+    ],
+    "count": 3
+  },
+  "albums 0 50 tags:laj sort:album": {
+    "albums_loop": [
+      {
+        "id": 3,
+        "performance": "",
+        "favorites_url": "db:album.title=%C3%89t%C3%A9%20indien&contributor.name=Les%20P%C3%A9tales",
+        "favorites_title": "Été indien",
+        "album": "Été indien",
+        "artist": "Les Pétales"
+      },
+      {
+        "id": 1,
+        "performance": "",
+        "favorites_url": "db:album.title=First%20Light&contributor.name=Aurora%20Lane",
+        "favorites_title": "First Light",
+        "album": "First Light",
+        "artwork_track_id": "3a3bf033",
+        "artist": "Aurora Lane"
+      },
+      {
+        "id": 4,
+        "performance": "",
+        "favorites_url": "db:album.title=Loops&contributor.name=Quiet%20Machines",
+        "favorites_title": "Loops",
+        "album": "Loops",
+        "artist": "Quiet Machines"
+      },
+      {
+        "id": 2,
+        "performance": "",
+        "favorites_url": "db:album.title=Night%20Shift&contributor.name=Aurora%20Lane",
+        "favorites_title": "Night Shift",
+        "album": "Night Shift",
+        "artwork_track_id": "1a3e8ea5",
+        "artist": "Aurora Lane"
+      }
+    ],
+    "count": 4
+  },
+  "albums 0 50 artist_id:2 tags:laj sort:album": {
+    "albums_loop": [
+      {
+        "id": 1,
+        "performance": "",
+        "favorites_url": "db:album.title=First%20Light&contributor.name=Aurora%20Lane",
+        "favorites_title": "First Light",
+        "album": "First Light",
+        "artwork_track_id": "3a3bf033",
+        "artist": "Aurora Lane"
+      },
+      {
+        "id": 2,
+        "performance": "",
+        "favorites_url": "db:album.title=Night%20Shift&contributor.name=Aurora%20Lane",
+        "favorites_title": "Night Shift",
+        "album": "Night Shift",
+        "artwork_track_id": "1a3e8ea5",
+        "artist": "Aurora Lane"
+      }
+    ],
+    "count": 2
+  },
+  "titles 0 50 album_id:1 sort:tracknum tags:acdjKlNu": {
+    "titles_loop": [
+      {
+        "id": 1,
+        "title": "Morning Glow",
+        "artist": "Aurora Lane",
+        "coverid": "3a3bf033",
+        "duration": 40,
+        "coverart": "1",
+        "album": "First Light",
+        "url": "file:///music/Aurora%20Lane/First%20Light/01.flac",
+        "tracknum": "1"
+      },
+      {
+        "id": 2,
+        "title": "Blue Hour",
+        "artist": "Aurora Lane",
+        "coverid": "3a3bf033",
+        "duration": 40,
+        "coverart": "1",
+        "album": "First Light",
+        "url": "file:///music/Aurora%20Lane/First%20Light/02.flac",
+        "tracknum": "2"
+      },
+      {
+        "id": 3,
+        "title": "Long Shadows",
+        "artist": "Aurora Lane",
+        "coverid": "3a3bf033",
+        "duration": 40,
+        "coverart": "1",
+        "album": "First Light",
+        "url": "file:///music/Aurora%20Lane/First%20Light/03.flac",
+        "tracknum": "3"
+      }
+    ],
+    "count": 3
+  },
+  "titles 1 2 album_id:1 sort:tracknum tags:acdjKlNu": {
+    "titles_loop": [
+      {
+        "id": 2,
+        "title": "Blue Hour",
+        "artist": "Aurora Lane",
+        "coverid": "3a3bf033",
+        "duration": 40,
+        "coverart": "1",
+        "album": "First Light",
+        "url": "file:///music/Aurora%20Lane/First%20Light/02.flac",
+        "tracknum": "2"
+      },
+      {
+        "id": 3,
+        "title": "Long Shadows",
+        "artist": "Aurora Lane",
+        "coverid": "3a3bf033",
+        "duration": 40,
+        "coverart": "1",
+        "album": "First Light",
+        "url": "file:///music/Aurora%20Lane/First%20Light/03.flac",
+        "tracknum": "3"
+      }
+    ],
+    "count": 3
+  },
+  "playlists tracks 0 50 playlist_id:10 tags:acdjKlNu": {
+    "__playlistTitle": "Ma sélection",
+    "playlisttracks_loop": [
+      {
+        "playlist index": "0",
+        "id": 2,
+        "title": "Blue Hour",
+        "artist": "Aurora Lane",
+        "coverid": "3a3bf033",
+        "duration": 40,
+        "coverart": "1",
+        "album": "First Light",
+        "url": "file:///music/Aurora%20Lane/First%20Light/02.flac"
+      },
+      {
+        "playlist index": 1,
+        "id": 8,
+        "title": "Loop One",
+        "artist": "Quiet Machines",
+        "duration": 25,
+        "coverart": "1",
+        "artwork_url": "0",
+        "album": "Loops",
+        "url": "file:///music/Quiet%20Machines/Loops/01.flac"
+      },
+      {
+        "playlist index": 2,
+        "id": 7,
+        "title": "Jazz à minuit",
+        "artist": "Les Pétales",
+        "duration": 30,
+        "coverart": "1",
+        "artwork_url": "0",
+        "album": "Été indien",
+        "url": "file:///music/Les%20P%C3%A9tales/%C3%89t%C3%A9%20indien/02.flac"
+      }
+    ],
+    "count": 3
+  },
+  "playlists tracks 0 50 playlist_id:11 tags:acdjKlNu": {
+    "__playlistTitle": "Radios",
+    "playlisttracks_loop": [
+      {
+        "playlist index": "0",
+        "id": "-108210278735440",
+        "title": "fip-midfi.mp3",
+        "coverid": "-108210278735440",
+        "duration": "0",
+        "coverart": "0",
+        "artwork_url": "html/images/radio.png",
+        "remote_title": "FIP",
+        "url": "http://radio.example.com/fip-midfi.mp3"
+      }
+    ],
+    "count": 1
+  },
+  "artists 0 20 search:aurora": {
+    "artists_loop": [
+      {
+        "id": 2,
+        "artist": "Aurora Lane",
+        "favorites_url": "db:contributor.name=Aurora%20Lane"
+      }
+    ],
+    "count": 1
+  },
+  "albums 0 20 search:aurora tags:laj": {
+    "albums_loop": [
+      {
+        "id": 1,
+        "performance": "",
+        "favorites_url": "db:album.title=First%20Light&contributor.name=Aurora%20Lane",
+        "favorites_title": "First Light",
+        "album": "First Light",
+        "artwork_track_id": "3a3bf033",
+        "artist": "Aurora Lane"
+      },
+      {
+        "id": 2,
+        "performance": "",
+        "favorites_url": "db:album.title=Night%20Shift&contributor.name=Aurora%20Lane",
+        "favorites_title": "Night Shift",
+        "album": "Night Shift",
+        "artwork_track_id": "1a3e8ea5",
+        "artist": "Aurora Lane"
+      }
+    ],
+    "count": 2
+  },
+  "titles 0 20 search:aurora tags:acdjKlNu": {
+    "titles_loop": [
+      {
+        "id": 2,
+        "title": "Blue Hour",
+        "artist": "Aurora Lane",
+        "coverid": "3a3bf033",
+        "duration": 40,
+        "coverart": "1",
+        "album": "First Light",
+        "url": "file:///music/Aurora%20Lane/First%20Light/02.flac"
+      },
+      {
+        "id": 5,
+        "title": "Last Train",
+        "artist": "Aurora Lane",
+        "coverid": "1a3e8ea5",
+        "duration": 35,
+        "coverart": "1",
+        "album": "Night Shift",
+        "url": "file:///music/Aurora%20Lane/Night%20Shift/02.flac"
+      },
+      {
+        "id": 3,
+        "title": "Long Shadows",
+        "artist": "Aurora Lane",
+        "coverid": "3a3bf033",
+        "duration": 40,
+        "coverart": "1",
+        "album": "First Light",
+        "url": "file:///music/Aurora%20Lane/First%20Light/03.flac"
+      },
+      {
+        "id": 1,
+        "title": "Morning Glow",
+        "artist": "Aurora Lane",
+        "coverid": "3a3bf033",
+        "duration": 40,
+        "coverart": "1",
+        "album": "First Light",
+        "url": "file:///music/Aurora%20Lane/First%20Light/01.flac"
+      },
+      {
+        "id": 4,
+        "title": "Neon Rain",
+        "artist": "Aurora Lane",
+        "coverid": "1a3e8ea5",
+        "duration": 35,
+        "coverart": "1",
+        "album": "Night Shift",
+        "url": "file:///music/Aurora%20Lane/Night%20Shift/01.flac"
+      }
+    ],
+    "count": 5
+  },
+  "playlists 0 20 search:aurora tags:u": {
+    "playlists_loop": [
+      {
+        "id": 10,
+        "playlist": "Ma sélection",
+        "url": "file:///playlist/Ma%20s%C3%A9lection.m3u",
+        "favorites_url": "file:///playlist/Ma%20s%C3%A9lection.m3u"
+      }
+    ],
+    "count": 1
+  },
+  "artists 0 20 search:fip": {
+    "count": 0
+  },
+  "albums 0 20 search:fip tags:laj": {
+    "count": 0
+  },
+  "titles 0 20 search:fip tags:acdjKlNu": {
+    "count": 0
+  },
+  "playlists 0 20 search:fip tags:u": {}
+}

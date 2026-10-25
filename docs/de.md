@@ -11,7 +11,7 @@ verbunden.
 
 ## Voraussetzungen
 
-- Gladys Assistant 5.1 oder neuer.
+- Gladys Assistant 5.3 oder neuer (Version 1.0 der Integration läuft mit Gladys 5.1).
 - Ein Lyrion Music Server, den Gladys im lokalen Netzwerk erreicht: Web-Port **9000** und, für
   sofortige Aktualisierungen, CLI-Port **9090** (standardmäßig offen). Logitech Media Server 8 hat
   dieselbe API und sollte ebenfalls funktionieren.
@@ -37,20 +37,55 @@ verbunden.
 Ein Gerät pro Player, erkannt an seiner Lyrion-Player-ID (der MAC-Adresse einer Squeezebox oder von
 squeezelite): Ein umbenannter Player oder eine neue IP-Adresse behält dasselbe Gerät.
 
-| Funktion                         | Was sie tut                                                                                                |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Ein/Aus                          | Schaltet den Player ein oder aus (die Ein/Aus-Taste von Lyrion).                                           |
-| Wiedergabestatus                 | 1, solange der Player spielt, sonst 0 (Pause, Stopp, aus).                                                 |
-| Wiedergabe, Pause                | Abspielen oder fortsetzen, pausieren.                                                                      |
-| Stopp                            | Beendet die Wiedergabe.                                                                                    |
-| Vorheriger Titel, Nächster Titel | Vorheriger oder nächster Titel der Warteschlange.                                                          |
-| Lautstärke                       | 0 bis 100.                                                                                                 |
-| Stumm                            | Schaltet den Ton stumm oder wieder ein (jeder Druck wechselt).                                             |
-| Titel, Interpret                 | Was gerade spielt; bei einem Radio der gemeldete Titel, sonst der Sender.                                  |
-| Durchsage                        | Ziel der Szenenaktion **Auf einem Lautsprecher sprechen** von Gladys: spricht, dann geht die Musik weiter. |
+| Funktion                         | Was sie tut                                                                                                                                       |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ein/Aus                          | Schaltet den Player ein oder aus (die Ein/Aus-Taste von Lyrion).                                                                                  |
+| Wiedergabestatus                 | 1 spielt, 0 pausiert, 2 gestoppt oder aus. 1, 0 oder 2 schreiben spielt, pausiert oder stoppt.                                                    |
+| Wiedergabe, Pause                | Abspielen oder fortsetzen, pausieren.                                                                                                             |
+| Stopp                            | Beendet die Wiedergabe.                                                                                                                           |
+| Vorheriger Titel, Nächster Titel | Vorheriger oder nächster Titel der Warteschlange.                                                                                                 |
+| Lautstärke                       | 0 bis 100.                                                                                                                                        |
+| Stumm                            | Schaltet stumm (1) oder den Ton wieder ein (0); die Lautstärke bleibt.                                                                            |
+| Titel, Interpret, Album          | Was gerade spielt; bei einem Radio der gemeldete Titel (der Sender als Album), sonst der Sender als Titel. Leer, wenn die Warteschlange leer ist. |
+| Cover                            | Das Cover des Titels, von Lyrion selbst verkleinert.                                                                                              |
+| Dauer, Position                  | In Sekunden; die Position schreiben springt im Titel. Ein Radio hat die Dauer 0.                                                                  |
+| Zufallswiedergabe, Wiederholen   | Zufallswiedergabe; Wiederholen: aus, die ganze Warteschlange oder der Titel.                                                                      |
+| Durchsage                        | Ziel der Szenenaktion **Auf einem Lautsprecher sprechen** von Gladys: spricht, dann geht die Musik weiter.                                        |
 
-Die Wiedergabetasten und die Lautstärke gehören zur Kategorie **Musik** von Gladys: Die Box
-**Musik** des Dashboards steuert sie. Das Widget **Lyrion-Player** unten zeigt den Rest.
+Alle außer Ein/Aus und Stopp gehören zur Kategorie **Musik** von Gladys: Die Box **Musik** des
+Dashboards zeigt und steuert sie (nächster Abschnitt). Das Widget **Lyrion-Player** zeigt zusätzlich
+alle Player auf einmal und die Gruppen.
+
+## Musik-Player von Gladys 5.3
+
+Seit Gladys 5.3 ist die Box **Musik** des Dashboards ein echter Player, und jeder Lyrion-Player füllt
+sie vollständig:
+
+- das Cover, Titel, Interpret und Album, ein Fortschrittsbalken, den du zum Springen ziehst,
+  Wiedergabe und Pause, vorheriger und nächster Titel, Zufallswiedergabe, Wiederholen, Lautstärke
+  und Stummschaltung;
+- die **Warteschlange** (Listen-Taste): die Warteschlange des Players in Wiedergabereihenfolge, der
+  aktuelle Titel hervorgehoben; ein Tippen spielt einen anderen;
+- **Suche und Durchblättern** (Lupen-Taste): Die Suche durchsucht die Lyrion-Bibliothek (Interpreten,
+  Alben, Titel, Wiedergabelisten) und die Namen deiner Favoriten (dort sind deine Radios); das
+  Durchblättern beginnt mit **Favoriten**, **Wiedergabelisten**, **Interpreten** und **Alben**. Ein
+  Tippen spielt das Element anstelle der Warteschlange; die zweite Geste fügt es nach dem aktuellen
+  Titel oder am Ende der Warteschlange ein. Ein Ordner öffnet sich, er wird nicht abgespielt. Ein
+  ausgeschalteter Player wird eingeschaltet.
+
+Die Szenenaktion **Musik auf einem Lautsprecher abspielen** von Gladys wählt ein Album, einen
+Interpreten, eine Wiedergabeliste, einen Titel oder einen Favoriten im selben Fenster und spielt ihn,
+wenn die Szene läuft. Die Aktion merkt sich das Element über seine Adresse in Lyrion (Albumtitel und
+Interpret, die Datei eines Titels): So funktioniert sie auch nach einem vollständigen Neuscan der
+Bibliothek.
+
+**Ein vor Version 1.1.0 hinzugefügtes Gerät** funktioniert wie bisher, ohne die neuen Funktionen:
+Öffne den Tab **Entdecken** der Integration und klicke beim Player auf **Aktualisieren** (Gladys bietet
+es an, weil sich die Funktionen geändert haben). Die neuen Funktionen kommen dazu; die bisherigen
+behalten ihre Szenen und Dashboards. Drei ändern sich: **Titel** und **Interpret** werden
+Musiktexte (leer, wenn nichts geladen ist, statt eines Strichs), **Stumm** nimmt einen Wert (1 stumm,
+0 Ton an) statt bei jedem Druck zu wechseln, und **Wiedergabestatus** ist 2 statt 0, wenn der Player
+gestoppt oder aus ist.
 
 ## Dashboard-Widget
 
@@ -96,6 +131,8 @@ bekommt Titel, Position, Lautstärke, Status, Wiederholungsmodus und Ein/Aus zur
   _Lautstärke einstellen_ auf 25.
 - **Türklingel**: wenn es klingelt, _Durchsage abspielen_ mit der Adresse einer Gong-MP3 auf dem
   Flur-Player (eine Aktion pro Player), Lautstärke 60.
+- **Sonntagsalbum**: sonntags um 10 Uhr _Musik auf einem Lautsprecher abspielen_ mit einem Album
+  aus der Lyrion-Bibliothek auf dem Player im Wohnzimmer.
 - **Haus verlassen**: wenn die letzte Person geht, _Alle Player pausieren_.
 - **Party**: _Einer Player-Gruppe beitreten_ für Wohnzimmer und Küche, und um Mitternacht _Gruppe
   verlassen_.
@@ -110,15 +147,22 @@ bekommt Titel, Position, Lautstärke, Status, Wiederholungsmodus und Ein/Aus zur
   die Player dann alle 5 Sekunden. Prüfe Port 9090 oder das Plugin „CLI“ von Lyrion.
 - **Ein Player fehlt**: Er muss mit diesem Server verbunden sein (er erscheint in der Weboberfläche
   von Lyrion); starte dann im Tab Entdecken eine neue Suche.
+- **Die Box Musik zeigt weder Cover noch Fortschrittsbalken**: Der Player wurde vor Version 1.1.0
+  hinzugefügt; klicke im Tab Entdecken auf **Aktualisieren**.
+- **„Lyrion kann dieses Element nicht abspielen“**: Das Element gibt es in Lyrion nicht mehr (Album
+  umbenannt, Datei verschoben); wähle es in der Szene neu.
 - Protokolle: auf der Seite der Integration; `LOG_LEVEL=debug` zeigt jede Abfrage.
 
 ## Grenzen
 
 - Ein Lyrion-Server pro Integration; keine automatische Erkennung (Lyrion antwortet nur auf
   Broadcast-Anfragen, die die Sandbox nicht weiterleitet): Gib seine Adresse ein.
-- Die Musikfunktionen haben keine Zeile in der Box „Geräte eines Raums“ von Gladys: Nutze die Box
-  Musik oder das Widget Lyrion-Player.
+- In der Box „Geräte eines Raums“ zeigt Gladys 5.3 Wiedergabestatus, Lautstärke, Stumm,
+  Zufallswiedergabe, Wiederholen und die Texte; die einmaligen Tasten (Wiedergabe, Pause, nächster
+  Titel…) haben dort keine Zeile: Nutze die Box Musik oder das Widget Lyrion-Player.
 - Eine Durchsage auf einer Gruppe spielt auf der ganzen Gruppe; mit Zufallswiedergabe kann die
   zurückgegebene Position abweichen. Ein endloser Stream wird nach 10 Minuten abgebrochen.
-- Nur die oberste Ebene der Favoriten wird angeboten.
+- Die Aktion **Lyrion-Favoriten abspielen** sieht nur die oberste Ebene der Favoriten; das Fenster
+  der Box Musik öffnet ihre Ordner. Die Apps von Lyrion (Online-Radios, Streamingdienste) lassen
+  sich aus Gladys nicht durchblättern: Füge ihre Elemente zu den Favoriten hinzu.
 - Nur lokales Netzwerk: Die Integration spricht mit dem Server, nie mit einem Cloud-Dienst.

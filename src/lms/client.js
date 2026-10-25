@@ -134,14 +134,27 @@ export class LmsClient {
     return this.request('', ['favorites', 'items', 0, 200]);
   }
 
-  /** The bytes of an image served by LMS (cover art), size-capped. */
+  /**
+   * The bytes of an image served by LMS (cover art), read up to the 300 KB
+   * the core accepts: a bigger image is refused without reading it all.
+   */
   async image(path) {
     return this.#get(path, {}, async (response) => {
-      const bytes = Buffer.from(await response.arrayBuffer());
-      if (bytes.length > MAX_IMAGE_BYTES) {
-        throw new LmsError('protocol', `Image too large (${bytes.length} bytes)`);
+      const tooLarge = () => new LmsError('protocol', 'Image too large (over 300 KB)');
+      if (Number(response.headers.get('content-length')) > MAX_IMAGE_BYTES) {
+        await response.body?.cancel().catch(() => {});
+        throw tooLarge();
       }
-      return bytes;
+      const chunks = [];
+      let size = 0;
+      for await (const chunk of response.body ?? []) {
+        size += chunk.length;
+        if (size > MAX_IMAGE_BYTES) {
+          throw tooLarge();
+        }
+        chunks.push(chunk);
+      }
+      return Buffer.concat(chunks);
     });
   }
 }

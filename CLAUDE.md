@@ -37,7 +37,8 @@ src/hub.js                        the server, its players, states, scene events,
 src/lms/client.js                 JSON-RPC client (POST /jsonrpc.js, basic auth, timeouts, images)
 src/lms/listener.js               CLI `listen 1` on port 9090: "player changed" signals, reconnection
 src/lms/model.js                  LMS answers -> snapshots (status, serverstatus, favorites)
-src/devices.js                    player -> Gladys device, snapshot -> feature states
+src/devices.js                    player -> Gladys device, snapshot -> now playing + feature states
+src/catalog.js                    Gladys 5.3 music panel: browse, search, play, queue (manifest `music`)
 src/scenes.js                     scene action handlers (manifest `scene_actions`)
 src/widgets.js                    dashboard widget "players" (manifest `widgets`)
 src/texts.js                      every text of the container, in en/fr/de/es
@@ -162,8 +163,12 @@ code de ce dépôt. Compléter ce fichier quand un nouveau piège est découvert
   n'applique **aucun `default`** tout en exigeant les champs `required` (422). Issues
   GladysAssistant/Gladys#3154 et #3155.
 
-**SDK 0.15 et journaux**
+**SDK et journaux**
 
+- SDK **^0.16.0** depuis la 1.1.0 (25/10/2026) : lecteur de musique de Gladys 5.3 (`publishNowPlaying`,
+  `artworkKey`, `onMusic*`, `validateMediaItems`), contrat dans
+  `Gladys/docs/specs/external-integrations/capabilities/music.md`. Le manifeste déclare `music` : donc
+  `gladys_version` `>=5.3.0`.
 - SDK `@gladysassistant/integration-sdk` **^0.15.0** (12/10/2026) : `DEVICE_POLL_FREQUENCIES`, faux
   Gladys de test (`@gladysassistant/integration-sdk/testing`, à préférer à un faux maison),
   déduplication des états, `parseMdnsTxt`. Lire son README et son CHANGELOG.
@@ -275,9 +280,10 @@ deux lecteurs squeezelite 1.9.9 en Docker. Réponses enregistrées dans `test/fi
   est « joué » en 0,4 s, le lecteur repasse aussitôt en `stop`). Sortie `-o -` vers `pv -L` pour
   jouer en temps réel. Fichiers WAV générés, dossier musical par `pref audiodir /music` puis
   `rescan`.
-- La catégorie `music` (lecture, pause, volume…) n'a pas de ligne dans la boîte « appareils d'une
-  pièce » (DLNA, Kodi) : le widget de l'intégration compense ; `music/play_notification` reçoit
-  l'URL MP3 de l'action du cœur « Parler sur une enceinte ».
+- Avant Gladys 5.3, la catégorie `music` n'avait pas de ligne dans la boîte « appareils d'une
+  pièce » ; la 5.3 y montre état de lecture, volume, muet, aléatoire, répétition et textes (pas les
+  boutons ponctuels). `music/play_notification` reçoit l'URL MP3 de l'action « Parler sur une
+  enceinte ».
 - **Écart assumé à la note « seuls les appareils ajoutés sont lus »** : le hub lit tous les lecteurs
   connectés (le widget et les déclencheurs en ont besoin, un `status` par lecteur et par cycle reste
   léger) ; seuls les appareils ajoutés reçoivent des états.
@@ -286,3 +292,39 @@ deux lecteurs squeezelite 1.9.9 en Docker. Réponses enregistrées dans `test/fi
   sur l'annonce est celle de l'utilisateur (la musique revient en pause) ; si la file n'est plus la
   nôtre (un favori lancé entre-temps), seuls volume, sourdine et répétition sont rendus ; serveur
   perdu ou nouvelle configuration : abandon, rien n'est rejoué des heures plus tard.
+
+### Lecteur Musique de Gladys 5.3 (1.1.0, vérifié sur LMS 9.1.1 et squeezelite 1.9.9)
+
+- **Identifiants** : les clés de fonctionnalités valent les types `music` (`title`, `position`…) :
+  les identifiants par défaut de `publishNowPlaying` (`${device}:${type}`) sont les nôtres, aucun
+  `featureExternalIds`. `title`, `artist` (text/text) et `mute` (television/volume_mute) de la 1.0
+  sont convertis sur place (même id) ; tout ce qui est `music` passe par `publishNowPlaying`, seule la
+  marche reste sur `publishChangedStates`. `onDeviceUpdated` republie tout (« Mettre à jour »).
+- `playback_state` : éteint, hors ligne ou file vide = IDLE (2) ; arrêté avec une file = IDLE, le
+  morceau reste affiché. `playlist repeat` de LMS : 0 non, **1 le morceau, 2 la file** (inverse de
+  `MUSIC_REPEAT_MODE`). `playlist shuffle` 1 ou 2 (albums) = aléatoire.
+- **Radio** : `remote` est au premier niveau de `status`, pas dans `playlist_loop` (sans tag `r`) ;
+  sans métadonnées, LMS nomme le flux d'après son fichier (`title` et `current_title` =
+  `fip-midfi.mp3`) : traité comme « pas de morceau », la station (`remote_title`, tag `N`) sert de
+  titre.
+- **Pochettes** : LMS redimensionne lui-même : `/music/<coverid>/cover_300x300_o` (format de la
+  source, JPEG 38 Ko pour une pochette de 2 Mo), `/imageproxy/<url>/image_64x64_o`, et toute image de
+  son serveur web avec `_WxH_o` avant l'extension (`music/4/cover_64x64_o.png`). Un `coverid` inconnu
+  rend une image générique (PNG), `html/images/*` sont des icônes génériques : ignorées. Dans
+  `playlists tracks`, un morceau sans pochette a `coverart: "1"` **sans** `coverid` et
+  `artwork_url: "0"`. Les clés passent par `artworkKey(<URL absolue>)` et `hub.artwork` les lit avec
+  le client LMS (authentification, 300 Ko au plus) : jamais le gestionnaire par défaut du SDK.
+- **Catalogue** : toutes les commandes de bibliothèque se paginent (`<start> <count>`, `count` = le
+  total). Lecture par **URL** (`playlist play|insert|add <url> [titre]`) : fichiers, flux, listes
+  `file:///…m3u`, et `db:album.title=…&contributor.name=…` (le `favorites_url` d'un album ou d'un
+  artiste) ; l'id `album:<id>:<url>` sert l'id au parcours et l'URL à la lecture (stable après une
+  réanalyse complète, contrairement aux ids). `playlist play` d'une URL inconnue et
+  `playlistcontrol cmd:load` d'un id inconnu **vident la file** et répondent `{}` / `count: 0` : le
+  remplacement est vérifié par la longueur de la file.
+- **Favoris** : `favorites items` donne au premier niveau des ids `<session>.<n>` (préfixe différent à
+  chaque appel) et dans un dossier (`item_id:3`) des ids `3.<n>` sans préfixe : seule la dernière
+  position est lue. `item_id:<n>` sans préfixe fonctionne pour jouer.
+- **Pièges du banc** : `playlist save <nom>` et `pref playlistdir` sans valeur **ferment la connexion
+  HTTP** sans réponse (9.1.1) ; écrire les `.m3u` dans `/playlist` puis `pref playlistdir /playlist`
+  et `rescan playlists`. Alpine n'a pas de paquet squeezelite : image Debian (`node:22-slim` +
+  `apt install squeezelite pv`), sortie `-o -` vers `pv -L 176400` pour jouer en temps réel.

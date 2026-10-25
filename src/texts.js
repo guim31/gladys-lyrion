@@ -18,6 +18,12 @@ export const NAMES = {
     mute: 'Mute',
     title: 'Title',
     artist: 'Artist',
+    album: 'Album',
+    artwork: 'Artwork',
+    duration: 'Duration',
+    position: 'Position',
+    shuffle: 'Shuffle',
+    repeat: 'Repeat',
     notification: 'Announcement',
   },
   fr: {
@@ -32,6 +38,12 @@ export const NAMES = {
     mute: 'Sourdine',
     title: 'Titre',
     artist: 'Artiste',
+    album: 'Album',
+    artwork: 'Pochette',
+    duration: 'Durée',
+    position: 'Position',
+    shuffle: 'Aléatoire',
+    repeat: 'Répétition',
     notification: 'Annonce',
   },
   de: {
@@ -46,6 +58,12 @@ export const NAMES = {
     mute: 'Stumm',
     title: 'Titel',
     artist: 'Interpret',
+    album: 'Album',
+    artwork: 'Cover',
+    duration: 'Dauer',
+    position: 'Position',
+    shuffle: 'Zufallswiedergabe',
+    repeat: 'Wiederholen',
     notification: 'Durchsage',
   },
   es: {
@@ -60,6 +78,12 @@ export const NAMES = {
     mute: 'Silencio',
     title: 'Título',
     artist: 'Artista',
+    album: 'Álbum',
+    artwork: 'Carátula',
+    duration: 'Duración',
+    position: 'Posición',
+    shuffle: 'Aleatorio',
+    repeat: 'Repetir',
     notification: 'Anuncio',
   },
 };
@@ -179,12 +203,38 @@ export const COMMAND_ERRORS = {
     'Ein Player kann sich nicht selbst beitreten: wähle einen anderen.',
     'Un reproductor no puede unirse a sí mismo: elija otro.',
   ),
+  not_playable: all(
+    'Lyrion cannot play this item.',
+    'Lyrion ne peut pas lire cet élément.',
+    'Lyrion kann dieses Element nicht abspielen.',
+    'Lyrion no puede reproducir este elemento.',
+  ),
+  folder_not_playable: all(
+    'Open this folder and choose what to play in it.',
+    'Ouvrez ce dossier et choisissez ce qu’il faut y lire.',
+    'Öffne diesen Ordner und wähle darin aus, was abgespielt werden soll.',
+    'Abra esta carpeta y elija qué reproducir en ella.',
+  ),
+  not_in_queue: all(
+    'This item is no longer in the queue.',
+    "Cet élément n'est plus dans la file d'attente.",
+    'Dieses Element ist nicht mehr in der Warteschlange.',
+    'Este elemento ya no está en la cola.',
+  ),
   bad_volume: all(
     'The volume goes from 0 to 100.',
     'Le volume va de 0 à 100.',
     'Die Lautstärke geht von 0 bis 100.',
     'El volumen va de 0 a 100.',
   ),
+};
+
+// The root folders of the Gladys 5.3 music panel (src/catalog.js).
+export const CATALOG_FOLDERS = {
+  favorites: all('Favorites', 'Favoris', 'Favoriten', 'Favoritos'),
+  playlists: all('Playlists', 'Listes de lecture', 'Wiedergabelisten', 'Listas de reproducción'),
+  artists: all('Artists', 'Artistes', 'Interpreten', 'Artistas'),
+  albums: all('Albums', 'Albums', 'Alben', 'Álbumes'),
 };
 
 /** The multi-language message of an error code (protocol when unknown). */

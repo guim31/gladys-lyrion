@@ -11,6 +11,20 @@ const num = (value, fallback = null) => {
 };
 const str = (value) => (typeof value === 'string' ? value.trim() : '');
 
+/** The last path segment of a URL, decoded ('' when none). */
+function lastSegment(url) {
+  const segment =
+    url
+      .replace(/[?#].*$/, '')
+      .split('/')
+      .pop() ?? '';
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+}
+
 /** `serverstatus` -> the server and its players. */
 export function parseServer(result = {}) {
   const players = (Array.isArray(result.players_loop) ? result.players_loop : [])
@@ -36,9 +50,13 @@ export function parseStatus(result = {}) {
   const mode = MODES.includes(result.mode) ? result.mode : 'stop';
   // A radio puts the song in current_title ("Artist - Title") and the station
   // in the track title / remote_title.
-  const streamTitle = str(result.current_title);
-  const remote = num(track.remote, 0) === 1;
-  let title = str(track.title);
+  // Without stream metadata, LMS names a radio after the file of its URL
+  // ("fip-midfi.mp3", seen on 9.1.1): that is no song, the station names it.
+  const remote = num(track.remote ?? result.remote, 0) === 1;
+  const fileName = remote ? lastSegment(str(track.url)) : '';
+  const noSong = (text) => text === '' || text === fileName;
+  const streamTitle = noSong(str(result.current_title)) ? '' : str(result.current_title);
+  let title = remote && noSong(str(track.title)) ? '' : str(track.title);
   let artist = str(track.artist);
   if (remote && streamTitle && !artist) {
     const dash = streamTitle.indexOf(' - ');
@@ -60,6 +78,7 @@ export function parseStatus(result = {}) {
     time: num(result.time, 0),
     duration: num(track.duration ?? result.duration, null),
     repeat: num(result['playlist repeat'], 0),
+    shuffle: num(result['playlist shuffle'], 0),
     title: tracks > 0 ? title : '',
     artist: tracks > 0 ? artist : '',
     album: tracks > 0 ? str(track.album) : '',
@@ -95,4 +114,55 @@ export function parseFavorites(result = {}) {
   return loop
     .filter((item) => typeof item?.id === 'string' && num(item.isaudio, 0) === 1)
     .map((item) => ({ id: item.id, name: str(item.name) }));
+}
+
+// LMS icons standing for "no artwork" (radio, folder, generic cover): Gladys
+// shows its own placeholder instead.
+const GENERIC_IMAGE = /^\/?html\/images\//;
+
+/**
+ * The path of an image LMS resizes itself, at `size` px: a cover by its id
+ * (`/music/<coverid>/cover_300x300_o`, JPEG or PNG like the source, verified
+ * on 9.1.1), a remote image through the LMS image proxy, an image of the LMS
+ * web server with the `_WxH_o` suffix before its extension. Null when there
+ * is no artwork (or only a generic icon).
+ * @param {{ coverId?: string, artworkUrl?: string }} source
+ * @param {number} size
+ */
+export function artworkPath({ coverId = '', artworkUrl = '' }, size) {
+  const spec = `${size}x${size}_o`;
+  if (coverId) {
+    return `/music/${encodeURIComponent(coverId)}/cover_${spec}`;
+  }
+  if (/^https?:\/\//i.test(artworkUrl)) {
+    return `/imageproxy/${encodeURIComponent(artworkUrl)}/image_${spec}`;
+  }
+  // `artwork_url: "0"` is what 9.1.1 answers for a song without a cover in a
+  // saved playlist: not a path.
+  if (!/[./]/.test(artworkUrl) || GENERIC_IMAGE.test(artworkUrl) || artworkUrl.includes('..')) {
+    return null;
+  }
+  const path = `/${artworkUrl.replace(/^\/+/, '')}`;
+  // Already sized (`cover_300x300_o.jpg`), or no extension to keep.
+  if (/_\d+x\d+(_[a-z])?(\.\w+)?$/i.test(path)) {
+    return path;
+  }
+  const dot = path.lastIndexOf('.');
+  return dot > path.lastIndexOf('/')
+    ? `${path.slice(0, dot)}_${spec}${path.slice(dot)}`
+    : `${path}_${spec}`;
+}
+
+/**
+ * A page of the queue (`status <offset> <limit> tags:…`): the songs with
+ * their index in the queue, the length of the queue and the current index.
+ */
+export function parseQueue(result = {}) {
+  const total = num(result.playlist_tracks, 0);
+  const loop = Array.isArray(result.playlist_loop) ? result.playlist_loop : [];
+  return {
+    total,
+    current: total > 0 ? num(result.playlist_cur_index, null) : null,
+    songs: loop.filter((song) => song && typeof song === 'object'),
+  };
 }

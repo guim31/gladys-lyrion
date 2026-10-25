@@ -5,6 +5,7 @@
 // -----------------------------------------------------------------------------
 
 import { createLogger } from '@gladysassistant/integration-sdk';
+import * as catalog from './catalog.js';
 import { normalizeConfig } from './config.js';
 import { Hub } from './hub.js';
 import { SCENE_ACTIONS } from './scenes.js';
@@ -64,7 +65,19 @@ export function registerHandlers(gladys, options = {}) {
   // The devices are published with should_poll: false (the container reads
   // LMS itself); this only serves a Gladys that would poll anyway.
   gladys.onPoll(whenReady(() => hub.refresh()));
+  // Added or updated ("Update" in the Discover tab): the SDK forgot what it
+  // had published for the device, everything is sent again now.
   gladys.onDeviceCreated(whenReady((device) => hub.onDeviceCreated(device)));
+  gladys.onDeviceUpdated(whenReady((device) => hub.onDeviceCreated(device)));
+
+  // The Gladys 5.3 music panel and the `music.play-media` scene action
+  // (manifest `music`), and the bytes of the artworks.
+  gladys.onMusicBrowse(whenReady((device, options) => catalog.browse(hub, device, options)));
+  gladys.onMusicSearch(whenReady((device, options) => catalog.search(hub, device, options)));
+  gladys.onMusicPlay(whenReady((device, media, mode) => catalog.play(hub, device, media, mode)));
+  gladys.onMusicQueueGet(whenReady((device, options) => catalog.queueGet(hub, device, options)));
+  gladys.onMusicQueuePlay(whenReady((device, index) => catalog.queuePlay(hub, device, index)));
+  gladys.onMusicGetArtwork(whenReady((key) => hub.artwork(key)));
   gladys.onConfigUpdated(whenReady((config) => hub.reconfigure(normalizeConfig(config))));
 
   for (const [key, handler] of Object.entries(SCENE_ACTIONS)) {

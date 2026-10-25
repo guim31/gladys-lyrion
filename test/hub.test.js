@@ -68,7 +68,7 @@ test('without the CLI, the container reads the players itself (never onPoll)', a
   const world = await ready({ lms });
   t.after(() => world.app.stop());
   const { gladys } = world;
-  assert.equal(last(gladys, 'title'), '—', 'nothing loaded');
+  assert.equal(last(gladys, 'title'), '', 'nothing loaded: cleared');
   lms.load(KITCHEN, SONGS, { index: 2 });
   // gladys.fake.poll() is never called: the timer of the container did it.
   await until(() => last(gladys, 'title') === 'Night Theme', 2000, 'timer read');
@@ -393,7 +393,7 @@ test('the server lost: players are offline in Gladys and in the widget', async (
   t.after(() => world.app.stop());
   assert.equal(last(world.gladys, 'playback_state'), 1);
   lms.down = true;
-  await until(() => last(world.gladys, 'playback_state') === 0, 2000, 'offline');
+  await until(() => last(world.gladys, 'playback_state') === 2, 2000, 'offline: stopped (IDLE)');
   const widget = await world.gladys.fake.widgetGet('players', { settings: {}, language: 'en' });
   assert.match(widget.data.content.components[0].text, /unavailable/);
   lms.down = false;
