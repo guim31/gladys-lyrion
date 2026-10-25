@@ -56,6 +56,7 @@ export const THUMBNAIL_SIZE = 64;
 const MAX_FAVORITES = 200;
 
 const TRACK_TAGS = 'tags:acdjKlNu';
+const TRACK_TAGS_NO_ARTIST = 'tags:cdjKlNu';
 const ALBUM_TAGS = 'tags:laj';
 
 export const ROOTS = ['favorites', 'playlists', 'artists', 'albums'];
@@ -223,10 +224,11 @@ function favoriteType(url) {
   if (url.startsWith('db:contributor')) {
     return ARTIST;
   }
-  if (url.startsWith('file:')) {
-    return TRACK;
+  if (/\.(m3u8?|pls|cue)$/i.test(url.replace(/[?#].*$/, '')) && !/^https?:/i.test(url)) {
+    return PLAYLIST;
   }
-  return RADIO;
+  // A stream; an app of LMS (`spotify:`…) or a file: a track.
+  return /^https?:\/\//i.test(url) ? RADIO : TRACK;
 }
 
 /**
@@ -246,7 +248,11 @@ export function favoriteItem(hub, favorite, folder = '') {
   }
   const url = text(favorite?.url);
   if (Number(favorite?.isaudio) !== 1 || !url || url.length + 4 > MAX_ID) {
-    return null;
+    // Neither playable nor browsable here, but kept: a browse page dropping
+    // a row would shift the pages Gladys asks next (offset = rows received).
+    return position
+      ? { id: `favx:${position}`, type: FOLDER, title, browsable: false, playable: false }
+      : null;
   }
   const item = {
     id: `fav:${url}`,
@@ -395,7 +401,7 @@ export async function play(hub, device, media, mode = MUSIC_PLAY_MODES.REPLACE) 
     throw new Error(`Unknown play mode ${mode}`);
   }
   const { kind, rest } = parseId(media?.id);
-  if (media?.type === FOLDER || kind === 'lms' || kind === 'favdir') {
+  if (media?.type === FOLDER || ['lms', 'favdir', 'favx'].includes(kind)) {
     throw hub.error('folder_not_playable');
   }
   const library = LIBRARY_KINDS[kind] ? parseLibrary(rest) : null;
@@ -405,7 +411,10 @@ export async function play(hub, device, media, mode = MUSIC_PLAY_MODES.REPLACE) 
   } else if (library?.id) {
     command = ['playlistcontrol', `cmd:${load[0]}`, `${LIBRARY_KINDS[kind]}:${library.id}`];
   } else if ((kind === 'fav' || kind === 'url') && rest) {
-    const title = kind === 'fav' ? await favoriteTitle(hub, rest) : '';
+    // The favorite's name for a stream only: given with a file, LMS would
+    // rename the song of its library.
+    const title =
+      kind === 'fav' && /^https?:\/\//i.test(rest) ? await favoriteTitle(hub, rest) : '';
     command = ['playlist', load[1], rest, ...(title ? [title] : [])];
   } else {
     throw hub.error('not_playable');
@@ -433,9 +442,13 @@ export async function play(hub, device, media, mode = MUSIC_PLAY_MODES.REPLACE) 
  */
 export async function queueGet(hub, device, { offset = 0, limit = 50 } = {}) {
   const player = playerOf(hub, device);
-  const { songs, total, current } = parseQueue(
-    await hub.query(player.id, ['status', offset, limit, TRACK_TAGS]),
-  );
+  let answer = await hub.query(player.id, ['status', offset, limit, TRACK_TAGS]);
+  // LMS 9.1 drops the whole playlist_loop when the artist of one song cannot
+  // be read (see LmsClient.status): read the page again without the artist.
+  if (Number(answer.playlist_tracks) > offset && !Array.isArray(answer.playlist_loop)) {
+    answer = await hub.query(player.id, ['status', offset, limit, TRACK_TAGS_NO_ARTIST]);
+  }
+  const { songs, total, current } = parseQueue(answer);
   const items = songs.map((song, i) => {
     const index = Number.isInteger(Number(song['playlist index']))
       ? Number(song['playlist index'])

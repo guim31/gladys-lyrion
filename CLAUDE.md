@@ -307,8 +307,9 @@ deux lecteurs squeezelite 1.9.9 en Docker. Réponses enregistrées dans `test/fi
   sans métadonnées, LMS nomme le flux d'après son fichier (`title` et `current_title` =
   `fip-midfi.mp3`) : traité comme « pas de morceau », la station (`remote_title`, tag `N`) sert de
   titre.
-- **Pochettes** : LMS redimensionne lui-même : `/music/<coverid>/cover_300x300_o` (format de la
-  source, JPEG 38 Ko pour une pochette de 2 Mo), `/imageproxy/<url>/image_64x64_o`, et toute image de
+- **Pochettes** : LMS redimensionne lui-même : `/music/<coverid>/cover_300x300_o.jpg` (JPEG 38 Ko
+  pour une pochette de 2 Mo ; sans `.jpg`, le format de la source : un GIF serait refusé par le cœur),
+  `/imageproxy/<url>/image_64x64_o.jpg`, et toute image de
   son serveur web avec `_WxH_o` avant l'extension (`music/4/cover_64x64_o.png`). Un `coverid` inconnu
   rend une image générique (PNG), `html/images/*` sont des icônes génériques : ignorées. Dans
   `playlists tracks`, un morceau sans pochette a `coverart: "1"` **sans** `coverid` et

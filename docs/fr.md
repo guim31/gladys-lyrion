@@ -76,13 +76,14 @@ s'exécute. Elle retient l'élément par son adresse dans Lyrion (le titre de l'
 le fichier d'un morceau) : elle continue de fonctionner après une réanalyse complète de la
 bibliothèque.
 
-**Un appareil ajouté avant la version 1.1.0** fonctionne comme avant, sans les nouvelles
-fonctionnalités : ouvrez l'onglet **Découverte** de l'intégration et cliquez sur **Mettre à jour**
+**Un appareil ajouté avant la version 1.1.0** garde ses fonctionnalités, sans les
+nouvelles : ouvrez l'onglet **Découverte** de l'intégration et cliquez sur **Mettre à jour**
 sur le lecteur (Gladys le propose parce que les fonctionnalités ont changé). Les nouvelles
 fonctionnalités s'ajoutent ; les anciennes gardent leurs scènes et leurs tableaux de bord. Trois
 changent : **Titre** et **Artiste** deviennent des textes de musique (vides quand rien n'est chargé,
 au lieu d'un tiret), **Sourdine** prend une valeur (1 coupe, 0 rétablit) au lieu de basculer à
-chaque appui, et **État de lecture** vaut 2 au lieu de 0 quand le lecteur est arrêté ou éteint.
+chaque appui, et **État de lecture** vaut 2 au lieu de 0 quand le lecteur est arrêté ou éteint. Les textes vides et l'état 2 valent dès
+la version 1.1.0 ; la sourdine bascule à chaque appui jusqu'à la mise à jour.
 
 ## Widget du tableau de bord
 

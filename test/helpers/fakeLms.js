@@ -249,7 +249,12 @@ export class FakeLms {
     const sub = args[0];
     switch (name) {
       case 'status':
-        return this.status(player, sub === '-' ? player.index : Number(sub), Number(args[1] ?? 1));
+        return this.status(
+          player,
+          sub === '-' ? player.index : Number(sub),
+          Number(args[1] ?? 1),
+          args.find((arg) => arg.startsWith('tags:')) ?? '',
+        );
       case 'playlistcontrol': {
         // `cmd:load|insert|add <kind>_id:<id>`: one song per id, none for 9999.
         const cmd = args[0].slice(4);
@@ -375,7 +380,7 @@ export class FakeLms {
     }
   }
 
-  status(player, start = player.index, count = 1) {
+  status(player, start = player.index, count = 1, tags = '') {
     const template = structuredClone(fixture('status-playing').result);
     delete template.playlist_loop;
     const song = player.queue[start];
@@ -396,6 +401,10 @@ export class FakeLms {
       result.playlist_loop = player.queue
         .slice(start, start + Math.max(1, count))
         .map((item, i) => ({ 'playlist index': start + i, remote: '0', ...item }));
+    }
+    // LMS 9.1: an unreadable artist drops the whole loop when tags ask for it.
+    if (this.unreadableArtist && tags.slice(5).includes('a')) {
+      delete result.playlist_loop;
     }
     const group = this.groupOf(player.id);
     if (group) {

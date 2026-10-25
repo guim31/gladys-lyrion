@@ -66,8 +66,8 @@ The user documentation is in [docs/en.md](docs/en.md) (also in [French](docs/fr.
   stays the single source of truth.
 - The music features go through the SDK's `publishNowPlaying` (diffed, the position only on a change
   of state or song, or a seek); the power through `publishChangedStates`.
-- Covers are fetched from the server, which resizes them itself (`/music/<coverid>/cover_300x300_o`,
-  `_64x64_o` for list thumbnails, or its image proxy for a remote artwork), with the credentials and
+- Covers are fetched from the server, which resizes them itself (`/music/<coverid>/cover_300x300_o.jpg`,
+  `_64x64_o.jpg` for list thumbnails, or its image proxy for a remote artwork), with the credentials and
   under the 300 KB Gladys accepts, and served by the integration: the browser never loads a
   third-party URL.
 - The catalog is read on demand: `favorites items`, `playlists`, `artists`, `albums`, `titles`,
@@ -77,7 +77,8 @@ The user documentation is in [docs/en.md](docs/en.md) (also in [French](docs/fr.
 
 ### Gladys 5.3: updating an existing device
 
-A player added with version 1.0.x keeps working as before. To get the new features, open the
+A player added with version 1.0.x keeps its features (its mute still toggles), with the empty texts
+and the stopped state (2) of 1.1.0. To get the new features, open the
 **Discover** tab of the integration and click **Update** on the player: the new features are added
 and the existing ones keep their scenes and dashboards. Title, artist and mute keep their external
 ids but become `music/title`, `music/artist` and `music/mute`; the playback state reads 2 (stopped)

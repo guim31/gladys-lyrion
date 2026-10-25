@@ -79,13 +79,14 @@ wenn die Szene läuft. Die Aktion merkt sich das Element über seine Adresse in 
 Interpret, die Datei eines Titels): So funktioniert sie auch nach einem vollständigen Neuscan der
 Bibliothek.
 
-**Ein vor Version 1.1.0 hinzugefügtes Gerät** funktioniert wie bisher, ohne die neuen Funktionen:
+**Ein vor Version 1.1.0 hinzugefügtes Gerät** behält seine Funktionen, ohne die neuen:
 Öffne den Tab **Entdecken** der Integration und klicke beim Player auf **Aktualisieren** (Gladys bietet
 es an, weil sich die Funktionen geändert haben). Die neuen Funktionen kommen dazu; die bisherigen
 behalten ihre Szenen und Dashboards. Drei ändern sich: **Titel** und **Interpret** werden
 Musiktexte (leer, wenn nichts geladen ist, statt eines Strichs), **Stumm** nimmt einen Wert (1 stumm,
 0 Ton an) statt bei jedem Druck zu wechseln, und **Wiedergabestatus** ist 2 statt 0, wenn der Player
-gestoppt oder aus ist.
+gestoppt oder aus ist. Die leeren Texte und der Status 2 gelten ab Version 1.1.0; Stumm wechselt
+bis zur Aktualisierung bei jedem Druck.
 
 ## Dashboard-Widget
 

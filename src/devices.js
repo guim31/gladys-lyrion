@@ -31,7 +31,7 @@ import {
   MUSIC_PLAYBACK_STATE,
   MUSIC_REPEAT_MODE,
 } from '@gladysassistant/integration-sdk';
-import { artworkPath } from './lms/model.js';
+import { artworkPath, lastSegment } from './lms/model.js';
 import { NAMES, pick } from './texts.js';
 
 export const DEVICE_TYPE = 'player';
@@ -171,7 +171,8 @@ export function nowPlaying(snapshot, baseUrl) {
       result.artist = snapshot.artist;
       result.album = snapshot.station;
     } else {
-      result.title = snapshot.title || snapshot.station;
+      // A stream with neither song nor station: the name of its file.
+      result.title = snapshot.title || snapshot.station || lastSegment(snapshot.url);
       result.artist = snapshot.artist;
       result.album = snapshot.remote ? '' : snapshot.album;
     }
@@ -179,7 +180,11 @@ export function nowPlaying(snapshot, baseUrl) {
     result.artwork_url = path ? `${baseUrl}${path}` : null;
     result.duration = seconds(snapshot.duration);
     if (state !== MUSIC_PLAYBACK_STATE.IDLE) {
-      result.position = Math.min(seconds(snapshot.time), result.duration || MAX_SECONDS);
+      // Bounded by the duration only: a stream (duration 0) plays for days,
+      // and a capped position would drift from the one the SDK extrapolates,
+      // then be republished at every read.
+      const time = Math.max(0, Math.round(Number(snapshot.time) || 0));
+      result.position = result.duration > 0 ? Math.min(time, result.duration) : time;
     }
   }
   if (snapshot.volume !== null) {

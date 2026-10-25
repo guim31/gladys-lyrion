@@ -39,7 +39,8 @@ the notes of the version's GitHub Release.
 - Mute is a music mute (`music/mute`, same external id) that takes a value
   (1 mutes, 0 unmutes) instead of toggling on each press.
 - Devices added with 1.0.x get the new features after **Update** in the
-  Discover tab of the integration; until then they work as before.
+  Discover tab of the integration; until then they keep their features (mute
+  still toggles), with the empty texts and the stopped state of 1.1.0.
 
 ## [1.0.1] - 2026-10-22
 

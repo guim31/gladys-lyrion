@@ -12,7 +12,7 @@
 
 import { createHash } from 'node:crypto';
 import { createLogger } from '@gladysassistant/integration-sdk';
-import { MUSIC_PLAYBACK_STATE } from '@gladysassistant/integration-sdk';
+import { DEVICE_FEATURE_CATEGORIES, MUSIC_PLAYBACK_STATE } from '@gladysassistant/integration-sdk';
 import {
   ARTWORK_SIZE,
   REPEAT_TO_LMS,
@@ -617,7 +617,11 @@ export class Hub {
       case 'volume':
         return this.setVolume(player, value);
       case 'mute':
-        // A television push button before 1.1.0 (toggle), music/mute since.
+        // music/mute since 1.1.0 takes a value; a device not updated yet still
+        // has the television push button of 1.0 (always 1): it toggles.
+        if (feature?.category === DEVICE_FEATURE_CATEGORIES.TELEVISION) {
+          return this.send(player.id, ['mixer', 'muting', 'toggle']);
+        }
         return this.send(player.id, ['mixer', 'muting', Number(value) ? '1' : '0']);
       case 'notification':
         return this.announce(player, value);

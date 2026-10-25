@@ -11,8 +11,8 @@ const num = (value, fallback = null) => {
 };
 const str = (value) => (typeof value === 'string' ? value.trim() : '');
 
-/** The last path segment of a URL, decoded ('' when none). */
-function lastSegment(url) {
+/** The last path segment of a URL, decoded ('' when none): the name of a stream file. */
+export function lastSegment(url) {
   const segment =
     url
       .replace(/[?#].*$/, '')
@@ -122,20 +122,20 @@ const GENERIC_IMAGE = /^\/?html\/images\//;
 
 /**
  * The path of an image LMS resizes itself, at `size` px: a cover by its id
- * (`/music/<coverid>/cover_300x300_o`, JPEG or PNG like the source, verified
- * on 9.1.1), a remote image through the LMS image proxy, an image of the LMS
- * web server with the `_WxH_o` suffix before its extension. Null when there
- * is no artwork (or only a generic icon).
+ * and a remote image through the LMS image proxy, both as JPEG (`.jpg`: LMS
+ * converts a PNG or GIF source, verified on 9.1.1; without it, the format of
+ * the source), an image of the LMS web server with the `_WxH_o` suffix before
+ * its extension. Null when there is no artwork (or only a generic icon).
  * @param {{ coverId?: string, artworkUrl?: string }} source
  * @param {number} size
  */
 export function artworkPath({ coverId = '', artworkUrl = '' }, size) {
   const spec = `${size}x${size}_o`;
   if (coverId) {
-    return `/music/${encodeURIComponent(coverId)}/cover_${spec}`;
+    return `/music/${encodeURIComponent(coverId)}/cover_${spec}.jpg`;
   }
   if (/^https?:\/\//i.test(artworkUrl)) {
-    return `/imageproxy/${encodeURIComponent(artworkUrl)}/image_${spec}`;
+    return `/imageproxy/${encodeURIComponent(artworkUrl)}/image_${spec}.jpg`;
   }
   // `artwork_url: "0"` is what 9.1.1 answers for a song without a cover in a
   // saved playlist: not a path.

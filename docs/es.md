@@ -76,13 +76,14 @@ lista de reproducción, una canción o un favorito en el mismo panel, y lo repro
 la escena. Guarda el elemento por su dirección en Lyrion (el título del álbum y su artista, el
 archivo de una canción): sigue funcionando tras un nuevo análisis completo de la biblioteca.
 
-**Un dispositivo añadido antes de la versión 1.1.0** funciona como antes, sin las nuevas funciones:
+**Un dispositivo añadido antes de la versión 1.1.0** conserva sus funciones, sin las nuevas:
 abra la pestaña **Descubrir** de la integración y haga clic en **Actualizar** en el reproductor (Gladys
 lo propone porque las funciones cambiaron). Las nuevas funciones se añaden; las existentes conservan
 sus escenas y paneles. Tres cambian: **Título** y **Artista** pasan a ser textos de música (vacíos
 cuando no hay nada cargado, en lugar de un guion), **Silencio** toma un valor (1 silencia, 0
 restablece) en lugar de alternar en cada pulsación, y **Estado de reproducción** vale 2 en lugar de 0
-cuando el reproductor está detenido o apagado.
+cuando el reproductor está detenido o apagado. Los textos vacíos y el estado 2 se aplican desde la
+versión 1.1.0; el silencio alterna en cada pulsación hasta la actualización.
 
 ## Widget del panel
 

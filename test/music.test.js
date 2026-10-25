@@ -14,7 +14,8 @@ import {
   artworkKey,
   validateMediaItems,
 } from '@gladysassistant/integration-sdk';
-import { FEATURES } from '../src/devices.js';
+import { FEATURES, nowPlaying } from '../src/devices.js';
+import { favoriteItem } from '../src/catalog.js';
 import { artworkPath, parseQueue, parseStatus } from '../src/lms/model.js';
 import { FakeLms, KITCHEN, SONGS, fixture } from './helpers/fakeLms.js';
 import { createAll, createWorld, deviceOf, featureId, featureOf, until } from './helpers/world.js';
@@ -85,7 +86,7 @@ test('now playing: one batch, artwork key, cleared when the queue is emptied', a
   assert.equal(last(gladys, 'album'), 'Daybreak');
   assert.equal(
     last(gladys, 'artwork'),
-    artworkKey(`${BASE}/music/a1b2c3d4/cover_300x300_o`),
+    artworkKey(`${BASE}/music/a1b2c3d4/cover_300x300_o.jpg`),
     'LMS resizes the cover itself',
   );
   assert.equal(last(gladys, 'position'), 12);
@@ -195,15 +196,15 @@ test('artwork: served by the LMS client, unknown keys refused', async (t) => {
   const ack = await gladys.fake.musicGetArtwork(last(gladys, 'artwork'));
   assert.equal(ack.success, true, ack.error);
   assert.equal(Buffer.from(ack.data.image, 'base64')[0], 0xff, 'a JPEG');
-  assert.equal(lms.requests.at(-1).path, '/music/a1b2c3d4/cover_300x300_o');
+  assert.equal(lms.requests.at(-1).path, '/music/a1b2c3d4/cover_300x300_o.jpg');
   assert.equal((await gladys.fake.musicGetArtwork('art-000000000000')).success, false);
 });
 
 test('artwork paths: LMS resizes covers, proxied images and its own images', () => {
-  assert.equal(artworkPath({ coverId: 'a1b2' }, 64), '/music/a1b2/cover_64x64_o');
+  assert.equal(artworkPath({ coverId: 'a1b2' }, 64), '/music/a1b2/cover_64x64_o.jpg');
   assert.equal(
     artworkPath({ artworkUrl: 'https://img.example.com/a.jpg' }, 300),
-    '/imageproxy/https%3A%2F%2Fimg.example.com%2Fa.jpg/image_300x300_o',
+    '/imageproxy/https%3A%2F%2Fimg.example.com%2Fa.jpg/image_300x300_o.jpg',
   );
   assert.equal(artworkPath({ artworkUrl: 'music/4/cover.png' }, 64), '/music/4/cover_64x64_o.png');
   assert.equal(artworkPath({ artworkUrl: 'html/images/radio.png' }, 64), null);
@@ -247,7 +248,7 @@ test('browse: the root folders, then the library, paged by LMS', async (t) => {
     'the id to browse, the URL to play',
   );
   assert.equal(first.subtitle, 'Aurora Lane');
-  assert.equal(first.artwork_key, artworkKey(`${BASE}/music/3a3bf033/cover_64x64_o`));
+  assert.equal(first.artwork_key, artworkKey(`${BASE}/music/3a3bf033/cover_64x64_o.jpg`));
   assert.equal(albums.items.find((i) => i.title === 'Loops').artwork_key, undefined);
 
   const artists = data(await gladys.fake.musicBrowse(device, { parentId: 'lms:artists' }));
@@ -436,4 +437,74 @@ test('an offline player: the library still browses, playing says why', async (t)
   data(await gladys.fake.musicBrowse(device, { parentId: 'lms:artists' }));
   const ack = await gladys.fake.musicPlay(device, { id: 'track:2', type: 'track' });
   assert.match(ack.error, /not connected/);
+});
+
+test('a stream playing for days: the position follows LMS, never capped', () => {
+  const radio = parseStatus(fixture('status-radio').result);
+  const snapshot = nowPlaying({ ...radio, time: 90_000.4 }, BASE);
+  assert.equal(snapshot.duration, 0);
+  assert.equal(snapshot.position, 90_000, 'a cap would drift from the extrapolated position');
+  const song = nowPlaying({ ...parseStatus(fixture('status-playing').result), time: 9999 }, BASE);
+  assert.ok(song.duration > 0);
+  assert.equal(song.position, song.duration, 'a song: bounded by its duration');
+  const nameless = nowPlaying({ ...radio, station: '' }, BASE);
+  assert.equal(nameless.title, 'fip-midfi.mp3', 'neither song nor station: the stream file');
+});
+
+test('mute on a device not updated yet (1.0 television push button): it toggles', async (t) => {
+  const lms = new FakeLms({ cliOpen: false });
+  lms.load(KITCHEN, SONGS);
+  const { gladys, device } = await ready(t, { lms });
+  const old = {
+    ...featureOf(gladys, KITCHEN, 'mute'),
+    category: 'television',
+    type: 'volume_mute',
+  };
+  await gladys.fake.setValue(device, old, 1);
+  assert.equal(lms.player(KITCHEN).muted, true);
+  await gladys.fake.setValue(device, old, 1);
+  assert.equal(lms.player(KITCHEN).muted, false, 'the same press unmutes');
+});
+
+test('queue: an unreadable artist (LMS 9.1 drops the loop): read again without it', async (t) => {
+  const lms = new FakeLms({ cliOpen: false });
+  lms.load(KITCHEN, SONGS);
+  const { gladys, device } = await ready(t, { lms });
+  lms.unreadableArtist = true;
+  const queue = data(await gladys.fake.musicQueueGet(device));
+  assert.deepEqual(
+    queue.items.map((i) => i.title),
+    ['Morning Song', 'Evening Tune', 'Night Theme'],
+  );
+});
+
+test('favorites: types from the URL, rows never dropped, title given to streams only', async (t) => {
+  const hub = { gladys: { artworkKey }, config: { baseUrl: BASE } };
+  const type = (url) => favoriteItem(hub, { id: 'x.0', name: 'F', isaudio: 1, url }).type;
+  assert.equal(type('http://radio.example.com/live'), 'radio');
+  assert.equal(type('spotify:album:abc'), 'track', 'an app of LMS is no radio');
+  assert.equal(type('file:///playlist/Mix.m3u'), 'playlist');
+  assert.equal(type('file:///music/a.flac'), 'track');
+  assert.deepEqual(favoriteItem(hub, { id: 'x.4', name: 'Odd', isaudio: 0, hasitems: 0 }), {
+    id: 'favx:4',
+    type: 'folder',
+    title: 'Odd',
+    browsable: false,
+    playable: false,
+  });
+
+  const lms = new FakeLms({ cliOpen: false });
+  lms.load(KITCHEN, SONGS);
+  const { gladys, device } = await ready(t, { lms });
+  data(
+    await gladys.fake.musicPlay(
+      device,
+      { id: 'fav:file:///music/Quiet%20Machines/Loops/02.flac', type: 'track' },
+      'append',
+    ),
+  );
+  const sent = lms.requests.filter((r) => r.playerId === KITCHEN).at(-1).command;
+  assert.deepEqual(sent, ['playlist', 'add', 'file:///music/Quiet%20Machines/Loops/02.flac']);
+  const odd = await gladys.fake.musicPlay(device, { id: 'favx:4', type: 'folder' });
+  assert.equal(odd.success, false);
 });

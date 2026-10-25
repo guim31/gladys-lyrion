@@ -69,7 +69,7 @@ test('one player: cover, song, artist and album, state, four buttons', async (t)
   const image = await gladys.fake.widgetGetImage(content.components[0].key);
   assert.equal(image.success, true, image.error);
   assert.deepEqual(validateWidgetImage(image.data.image), []);
-  assert.equal(lms.requests.at(-1).path, '/music/a1b2c3d4/cover_300x300_o');
+  assert.equal(lms.requests.at(-1).path, '/music/a1b2c3d4/cover_300x300_o.jpg');
 
   const act = (key) =>
     gladys.fake.widgetAction('players', key, {}, { settings: { device: deviceId(KITCHEN) } });

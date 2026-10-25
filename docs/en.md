@@ -72,12 +72,13 @@ favorite in the same panel, and plays it when the scene runs. It keeps the item 
 Lyrion (the album title and its artist, the file of a song): it keeps working after a full rescan of
 the library.
 
-**A device added before version 1.1.0** works as before, without the new features: open the
+**A device added before version 1.1.0** keeps its features, without the new ones: open the
 **Discover** tab of the integration and click **Update** on the player (Gladys offers it because the
 features changed). The new features are added; the existing ones keep their scenes and dashboards.
 Three change: **Title** and **Artist** become music texts (empty when nothing is loaded, instead of a
 dash), **Mute** takes a value (1 mutes, 0 unmutes) instead of toggling on each press, and **Playback
-state** reads 2 instead of 0 when the player is stopped or off.
+state** reads 2 instead of 0 when the player is stopped or off. The empty texts and the state 2 apply from
+version 1.1.0 on; mute toggles on each press until the update.
 
 ## Dashboard widget
 
