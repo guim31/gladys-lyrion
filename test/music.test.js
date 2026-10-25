@@ -345,11 +345,25 @@ test('play: by URL (survives a rescan), by id, a favorite with its title', async
       'replace',
     ),
   );
-  assert.deepEqual(sent().at(-2), [
-    'playlist',
-    'play',
-    'db:album.title=First%20Light&contributor.name=Aurora%20Lane',
-  ]);
+  assert.deepEqual(
+    sent().at(-1),
+    ['playlistcontrol', 'cmd:load', 'album_id:1'],
+    'the id still names this album: exact (two albums may share a URL)',
+  );
+  lms.library['albums 0 1 album_id:1 tags:l'] = { count: 0 };
+  lms.load(KITCHEN, SONGS);
+  data(
+    await gladys.fake.musicPlay(
+      device,
+      { id: 'album:1:db:album.title=First%20Light&contributor.name=Aurora%20Lane', type: 'album' },
+      'replace',
+    ),
+  );
+  assert.deepEqual(
+    sent().at(-2),
+    ['playlist', 'play', 'db:album.title=First%20Light&contributor.name=Aurora%20Lane'],
+    'after a rescan (the id names nothing): the URL',
+  );
 
   lms.load(KITCHEN, SONGS);
   data(await gladys.fake.musicPlay(device, { id: 'track:8', type: 'track' }, 'next'));

@@ -423,5 +423,17 @@
   "titles 0 20 search:fip tags:acdjKlNu": {
     "count": 0
   },
-  "playlists 0 20 search:fip tags:u": {}
+  "playlists 0 20 search:fip tags:u": {},
+  "albums 0 1 album_id:1 tags:l": {
+    "albums_loop": [
+      {
+        "id": 1,
+        "performance": "",
+        "favorites_url": "db:album.title=First%20Light&contributor.name=Aurora%20Lane",
+        "favorites_title": "First Light",
+        "album": "First Light"
+      }
+    ],
+    "count": 1
+  }
 }

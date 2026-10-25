@@ -321,7 +321,9 @@ deux lecteurs squeezelite 1.9.9 en Docker. Réponses enregistrées dans `test/fi
   artiste) ; l'id `album:<id>:<url>` sert l'id au parcours et l'URL à la lecture (stable après une
   réanalyse complète, contrairement aux ids). `playlist play` d'une URL inconnue et
   `playlistcontrol cmd:load` d'un id inconnu **vident la file** et répondent `{}` / `count: 0` : le
-  remplacement est vérifié par la longueur de la file.
+  remplacement est vérifié par la longueur de la file. **Deux albums homonymes du même artiste** (deux « Live »)
+  ont le même `favorites_url`, et LMS joue le premier : un album se joue par son id tant que
+  `albums 0 1 album_id:<id>` rend encore cette URL, par l'URL sinon (vérifié sur le banc).
 - **Favoris** : `favorites items` donne au premier niveau des ids `<session>.<n>` (préfixe différent à
   chaque appel) et dans un dossier (`item_id:3`) des ids `3.<n>` sans préfixe : seule la dernière
   position est lue. `item_id:<n>` sans préfixe fonctionne pour jouer.

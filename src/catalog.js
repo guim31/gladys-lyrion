@@ -22,6 +22,9 @@
 //     LMS builds the queue itself, an artist of thousands of songs included.
 //     Without a URL, `playlistcontrol cmd:load|insert|add <kind>_id:<id>`,
 //     which answers the number of songs;
+//   - two albums of one title and artist (two "Live") share their URL, and
+//     LMS plays the first: an album plays by its id while the id still names
+//     the album of the URL (`albums album_id:<id>`), by its URL after a rescan;
 //   - a URL or an id LMS does not know leaves an empty queue on `play` and
 //     `load`: a replace is checked by reading the length of the queue;
 //   - the favorites answer an id prefixed with a session (`555fb4c9.3`),
@@ -383,6 +386,16 @@ export async function search(hub, device, { query, type = null, limit = 20 } = {
   return { items };
 }
 
+/** The album id still names the album of the URL (no rescan since). */
+async function sameAlbum(hub, { id, url }) {
+  try {
+    const result = await hub.query('', ['albums', 0, 1, `album_id:${id}`, 'tags:l']);
+    return loop(result, 'albums_loop')[0]?.favorites_url === url;
+  } catch {
+    return false;
+  }
+}
+
 /** The title of a favorite by its URL (top level), for LMS to show it. */
 async function favoriteTitle(hub, url) {
   try {
@@ -406,7 +419,11 @@ export async function play(hub, device, media, mode = MUSIC_PLAY_MODES.REPLACE) 
   }
   const library = LIBRARY_KINDS[kind] ? parseLibrary(rest) : null;
   let command;
-  if (library?.url) {
+  if (kind === 'album' && library?.id && library.url && (await sameAlbum(hub, library))) {
+    // Two albums of one title and artist share their URL (two "Live"
+    // albums: LMS plays the first): the id, still that album, is exact.
+    command = ['playlistcontrol', `cmd:${load[0]}`, `album_id:${library.id}`];
+  } else if (library?.url) {
     command = ['playlist', load[1], library.url];
   } else if (library?.id) {
     command = ['playlistcontrol', `cmd:${load[0]}`, `${LIBRARY_KINDS[kind]}:${library.id}`];
